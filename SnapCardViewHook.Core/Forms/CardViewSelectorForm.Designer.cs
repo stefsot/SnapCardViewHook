@@ -41,6 +41,9 @@
             this.overrideCardCheckBox = new System.Windows.Forms.CheckBox();
             this.cardBox = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.flipCardCheckBox = new System.Windows.Forms.CheckBox();
+            this.overrideCardBackCheckBox = new System.Windows.Forms.CheckBox();
+            this.cardBackBox = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // surfaceEffectBox
@@ -123,7 +126,7 @@
             this.force3DCheckbox.Checked = true;
             this.force3DCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.force3DCheckbox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.force3DCheckbox.Location = new System.Drawing.Point(34, 419);
+            this.force3DCheckbox.Location = new System.Drawing.Point(34, 490);
             this.force3DCheckbox.Name = "force3DCheckbox";
             this.force3DCheckbox.Size = new System.Drawing.Size(111, 20);
             this.force3DCheckbox.TabIndex = 7;
@@ -180,11 +183,46 @@
             this.label1.TabIndex = 12;
             this.label1.Text = "!! setting an invalid variant value will crash the game !!";
             // 
+            // flipCardCheckBox
+            // 
+            this.flipCardCheckBox.AutoSize = true;
+            this.flipCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipCardCheckBox.Location = new System.Drawing.Point(34, 516);
+            this.flipCardCheckBox.Name = "flipCardCheckBox";
+            this.flipCardCheckBox.Size = new System.Drawing.Size(78, 20);
+            this.flipCardCheckBox.TabIndex = 13;
+            this.flipCardCheckBox.Text = "Flip card";
+            this.flipCardCheckBox.UseVisualStyleBackColor = true;
+            this.flipCardCheckBox.CheckedChanged += new System.EventHandler(this.flipCardCheckBox_CheckedChanged_1);
+            // 
+            // overrideCardBackCheckBox
+            // 
+            this.overrideCardBackCheckBox.AutoSize = true;
+            this.overrideCardBackCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.overrideCardBackCheckBox.Location = new System.Drawing.Point(34, 412);
+            this.overrideCardBackCheckBox.Name = "overrideCardBackCheckBox";
+            this.overrideCardBackCheckBox.Size = new System.Drawing.Size(141, 20);
+            this.overrideCardBackCheckBox.TabIndex = 15;
+            this.overrideCardBackCheckBox.Text = "Override card back";
+            this.overrideCardBackCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // cardBackBox
+            // 
+            this.cardBackBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cardBackBox.FormattingEnabled = true;
+            this.cardBackBox.Location = new System.Drawing.Point(34, 438);
+            this.cardBackBox.Name = "cardBackBox";
+            this.cardBackBox.Size = new System.Drawing.Size(216, 21);
+            this.cardBackBox.TabIndex = 14;
+            // 
             // CardViewSelectorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(302, 449);
+            this.ClientSize = new System.Drawing.Size(302, 547);
+            this.Controls.Add(this.overrideCardBackCheckBox);
+            this.Controls.Add(this.cardBackBox);
+            this.Controls.Add(this.flipCardCheckBox);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.overrideCardCheckBox);
             this.Controls.Add(this.cardBox);
@@ -225,5 +263,8 @@
         private System.Windows.Forms.CheckBox overrideCardCheckBox;
         private System.Windows.Forms.ComboBox cardBox;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox flipCardCheckBox;
+        private System.Windows.Forms.CheckBox overrideCardBackCheckBox;
+        private System.Windows.Forms.ComboBox cardBackBox;
     }
 }

@@ -22,35 +22,14 @@ namespace SnapCardViewHook.Core.Wrappers
             get
             {
                 var strPtr = *(void**)(Ptr + SnapTypeDataCollector.CardDef_Name_Field_Offset);
-                return strPtr == null ? null : new IL2CppStringRef(strPtr).GetObject();
+                return new IL2CppStringRef(strPtr).GetObject();
             }
         }
 
-        public int CardDefId
-        {
-            get
-            {
-                var value = *(int*)(Ptr + SnapTypeDataCollector.CardDef_CardDefId_Field_Offset);
-                return value;
-            }
-        }
+        public int CardDefId => *(int*)(Ptr + SnapTypeDataCollector.CardDef_CardDefId_Field_Offset);
 
-        public int Cost
-        {
-            get
-            {
-                var value = *(int*)(Ptr + SnapTypeDataCollector.CardDef_Cost_Field_Offset);
-                return value;
-            }
-        }
+        public int Cost => *(int*)(Ptr + SnapTypeDataCollector.CardDef_Cost_Field_Offset);
 
-        public int Power
-        {
-            get
-            {
-                var value = *(int*)(Ptr + SnapTypeDataCollector.CardDef_Power_Field_Offset);
-                return value;
-            }
-        }
+        public int Power => *(int*)(Ptr + SnapTypeDataCollector.CardDef_Power_Field_Offset);
     }
 }

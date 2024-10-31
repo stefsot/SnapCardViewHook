@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Windows.Forms;
 using IL2CppApi.Wrappers;
 using SnapCardViewHook.Core.IL2Cpp;
 // ReSharper disable InconsistentNaming
@@ -13,9 +13,15 @@ namespace SnapCardViewHook.Core
 {
     public static unsafe class SnapTypeDataCollector
     {
+        // delegate type definitions
         public delegate IntPtr CardDefList_Find_delegate_(IntPtr cardDef);
         public delegate IntPtr CardToArtVariantDefList_Find_delegate_(IntPtr artVariantDefId);
-        public delegate IntPtr void__delegate_();
+        public delegate IntPtr ptr_void__delegate_();
+
+        public delegate void CardDetailsCardView_FlipCard_delegate_(IntPtr thisPtr, bool flipped, float overrideDuration);
+
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        public delegate void void_this__delegate_(IntPtr thisPtr);
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void CardView_Initialize_delegate_(
@@ -24,6 +30,7 @@ namespace SnapCardViewHook.Core
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
             int logoEffectId, int cardBackDefId, bool isMorph);
 
+        // namespace and assembly constants
         private static class Constants
         {
             public const string Dll_SecondDinner_CubeDef = "SecondDinner.CubeDef.dll";
@@ -50,17 +57,25 @@ namespace SnapCardViewHook.Core
         public static int CardToArtVariantDef_CardDefId_Field_Offset { get; private set; }
         public static int BorderDef_BorderDefId_Field_Offset { get; private set; }
         public static int BorderDef_Name_Field_Offset { get; private set; }
-
-        public static void__delegate_ BorderDefList_get_Defs { get; private set; }
+        public static ptr_void__delegate_ BorderDefList_get_Defs { get; private set; }
         public static IntPtr BorderDefList_Defs_cached_value { get; private set; }
-
+        public static void_this__delegate_ UiVfxManagerRuntimeUpdateOriginal { get; private set; }
+        public static void_this__delegate_ CardDetailsCardViewInitializeOriginal { get; private set; }
+        public static IntPtr CardDetailsCardView_InstancePtr { get; private set; }
+        public static CardDetailsCardView_FlipCard_delegate_ CardDetailsCardView_FlipCard { get; private set; }
+        public static IL2CppFieldInfoWrapper[] CardBackDefId_Fields { get; private set; }
 
 
         public static CardView_Initialize_delegate_ CardViewInitializeHookOverride { get; set; }
         public static bool Loaded { get; private set; }
 
-        private static CardView_Initialize_delegate_ _detour_CardView_Initialize_delegate;
+        // 
+        private static readonly ConcurrentStack<Action> _uiThreadActions = new ConcurrentStack<Action>();
 
+       // GC fields
+       private static CardView_Initialize_delegate_ _cache_detour_CardView_Initialize;
+       private static void_this__delegate_ _cache_detour_UiVfxManager_RuntimeUpdate;
+       private static void_this__delegate_ _cache_detour_CardDetailsCardView_Initialize;
 
         public static void EnsureLoaded()
         {
@@ -86,6 +101,9 @@ namespace SnapCardViewHook.Core
             Collect_CardToArtVariantDef(assemblies);
             Collect_BorderDefList(assemblies);
             Collect_BorderDef(assemblies);
+            Collect_UiVfxManager(assemblies);
+            Collect_CardDetailsCardView(assemblies);
+            Collect_CardBackDefId(assemblies);
         }
 
         private static IL2CppClassWrapper GetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName, string typeNameSpace, string typeName)
@@ -204,7 +222,7 @@ namespace SnapCardViewHook.Core
             void* originalPtr;
             // store delegate into class to avoid garbage collection
             // alternatively use GCHandle.Alloc
-            var detourDelegate = _detour_CardView_Initialize_delegate = new CardView_Initialize_delegate_(CardView_Initialize_Detour);
+            var detourDelegate = _cache_detour_CardView_Initialize = new CardView_Initialize_delegate_(CardView_Initialize_Detour);
             
             if (!HookHelper.CreateHook(
                     (void*)method.MethodPointer,
@@ -279,7 +297,7 @@ namespace SnapCardViewHook.Core
 
             var method = borderDefListClass.GetMethods().FirstOrDefault(m => m.Name == "get_DefIds");
 
-            BorderDefList_get_Defs = Marshal.GetDelegateForFunctionPointer<void__delegate_>(method.MethodPointer);
+            BorderDefList_get_Defs = Marshal.GetDelegateForFunctionPointer<ptr_void__delegate_>(method.MethodPointer);
             BorderDefList_Defs_cached_value = BorderDefList_get_Defs();
         }
 
@@ -292,6 +310,104 @@ namespace SnapCardViewHook.Core
 
             var fieldName = TryGetField(borderDefClass, "<Name>k__BackingField");
             BorderDef_Name_Field_Offset = fieldName.Offset.ToInt32();
+        }
+
+
+        private static void Collect_UiVfxManager(IL2CppImageWrapper[] assemblies)
+        {
+            var uiVfxManagerClass = TryGetIL2CppClass(assemblies, Constants.Dll_App_View, Constants.Namespace_CubeUnity_App_View, "UiVfxManager");
+            var method = uiVfxManagerClass
+                .GetMethods()
+                .FirstOrDefault(f => f.Name == "RuntimeUpdate");
+
+            if (method == null)
+            {
+                ThrowIL2CppMethodError("UiVfxManager.RuntimeUpdate");
+                return;
+            }
+
+            void* originalPtr;
+            var detourDelegate = _cache_detour_UiVfxManager_RuntimeUpdate = new void_this__delegate_(UiVfxManager_RuntimeUpdate_Detour);
+
+            if (!HookHelper.CreateHook(
+                    (void*)method.MethodPointer,
+                    (void*)Marshal.GetFunctionPointerForDelegate(detourDelegate),
+                    &originalPtr))
+                throw new Exception("CreateHook for UiVfxManager failed");
+
+            UiVfxManagerRuntimeUpdateOriginal = (void_this__delegate_)
+                Marshal.GetDelegateForFunctionPointer(new IntPtr(originalPtr), typeof(void_this__delegate_));
+        }
+
+        private static void Collect_CardDetailsCardView(IL2CppImageWrapper[] assemblies)
+        {
+            var uiVfxManagerClass = TryGetIL2CppClass(assemblies, Constants.Dll_App_View, Constants.Namespace_CubeUnity_App_View, "CardDetailsCardView");
+            var method = uiVfxManagerClass
+                .GetMethods()
+                .FirstOrDefault(f => f.Name == "Initialize");
+
+            if (method == null)
+            {
+                ThrowIL2CppMethodError("CardDetailsCardView.Initialize");
+                return;
+            }
+
+            void* originalPtr;
+            var detourDelegate = _cache_detour_CardDetailsCardView_Initialize = new void_this__delegate_(CardDetailsCardView_Initialize_Detour);
+
+            if (!HookHelper.CreateHook(
+                    (void*)method.MethodPointer,
+                    (void*)Marshal.GetFunctionPointerForDelegate(detourDelegate),
+                    &originalPtr))
+                throw new Exception("CreateHook for CardDetailsCardView failed");
+
+            CardDetailsCardViewInitializeOriginal = (void_this__delegate_)
+                Marshal.GetDelegateForFunctionPointer(new IntPtr(originalPtr), typeof(void_this__delegate_));
+
+
+            var flipCardMethod = uiVfxManagerClass
+                .GetMethods()
+                .FirstOrDefault(f => f.Name == "FlipCard");
+
+            if (flipCardMethod == null)
+            {
+                ThrowIL2CppMethodError("CardDetailsCardView.FlipCard");
+                return;
+            }
+
+            CardDetailsCardView_FlipCard = (CardDetailsCardView_FlipCard_delegate_)
+                Marshal.GetDelegateForFunctionPointer(flipCardMethod.MethodPointer, typeof(CardDetailsCardView_FlipCard_delegate_));
+        }
+
+        private static void Collect_CardBackDefId(IL2CppImageWrapper[] assemblies)
+        {
+            var cardBackDefIdClass = TryGetIL2CppClass(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "CardBackDefId");
+            CardBackDefId_Fields = cardBackDefIdClass.GetFields();
+        }
+
+        //
+        // public methods
+        //
+
+        public static void ExecuteActionInGameUiThread(Action callback)
+        {
+            _uiThreadActions.Push(callback);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void CardDetailsCardView_Initialize_Detour(IntPtr thisPtr)
+        {
+            CardDetailsCardView_InstancePtr = thisPtr;
+            CardDetailsCardViewInitializeOriginal(thisPtr);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void UiVfxManager_RuntimeUpdate_Detour(IntPtr thisPtr)
+        {
+            if (_uiThreadActions.TryPop(out var callback))
+                callback();
+
+            UiVfxManagerRuntimeUpdateOriginal(thisPtr);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

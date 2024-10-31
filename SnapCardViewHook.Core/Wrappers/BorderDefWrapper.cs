@@ -17,21 +17,14 @@ namespace SnapCardViewHook.Core.Wrappers
         {
         }
 
-        public IntPtr BorderDefId
-        {
-            get
-            {
-                var value = *(IntPtr*)(Ptr + SnapTypeDataCollector.BorderDef_BorderDefId_Field_Offset);
-                return value;
-            }
-        }
+        public IntPtr BorderDefId => *(IntPtr*)(Ptr + SnapTypeDataCollector.BorderDef_BorderDefId_Field_Offset);
 
         public string Name
         {
             get
             {
                 var strPtr = *(void**)(Ptr + SnapTypeDataCollector.BorderDef_Name_Field_Offset);
-                return strPtr == null ? null : new IL2CppStringRef(strPtr).GetObject();
+                return new IL2CppStringRef(strPtr).GetObject();
             }
         }
     }
