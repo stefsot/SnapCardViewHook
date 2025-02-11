@@ -44,6 +44,10 @@
             this.flipCardCheckBox = new System.Windows.Forms.CheckBox();
             this.overrideCardBackCheckBox = new System.Windows.Forms.CheckBox();
             this.cardBackBox = new System.Windows.Forms.ComboBox();
+            this.descriptionTextBox = new System.Windows.Forms.TextBox();
+            this.changeDescriptionButton = new System.Windows.Forms.Button();
+            this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
+            this.boardBox = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // surfaceEffectBox
@@ -126,7 +130,7 @@
             this.force3DCheckbox.Checked = true;
             this.force3DCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.force3DCheckbox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.force3DCheckbox.Location = new System.Drawing.Point(34, 490);
+            this.force3DCheckbox.Location = new System.Drawing.Point(34, 481);
             this.force3DCheckbox.Name = "force3DCheckbox";
             this.force3DCheckbox.Size = new System.Drawing.Size(111, 20);
             this.force3DCheckbox.TabIndex = 7;
@@ -187,7 +191,7 @@
             // 
             this.flipCardCheckBox.AutoSize = true;
             this.flipCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipCardCheckBox.Location = new System.Drawing.Point(34, 516);
+            this.flipCardCheckBox.Location = new System.Drawing.Point(151, 481);
             this.flipCardCheckBox.Name = "flipCardCheckBox";
             this.flipCardCheckBox.Size = new System.Drawing.Size(78, 20);
             this.flipCardCheckBox.TabIndex = 13;
@@ -215,11 +219,55 @@
             this.cardBackBox.Size = new System.Drawing.Size(216, 21);
             this.cardBackBox.TabIndex = 14;
             // 
+            // descriptionTextBox
+            // 
+            this.descriptionTextBox.Location = new System.Drawing.Point(299, 269);
+            this.descriptionTextBox.Multiline = true;
+            this.descriptionTextBox.Name = "descriptionTextBox";
+            this.descriptionTextBox.Size = new System.Drawing.Size(216, 93);
+            this.descriptionTextBox.TabIndex = 16;
+            this.descriptionTextBox.Visible = false;
+            // 
+            // changeDescriptionButton
+            // 
+            this.changeDescriptionButton.Location = new System.Drawing.Point(299, 372);
+            this.changeDescriptionButton.Name = "changeDescriptionButton";
+            this.changeDescriptionButton.Size = new System.Drawing.Size(216, 26);
+            this.changeDescriptionButton.TabIndex = 17;
+            this.changeDescriptionButton.Text = "Change card text";
+            this.changeDescriptionButton.UseVisualStyleBackColor = true;
+            this.changeDescriptionButton.Visible = false;
+            this.changeDescriptionButton.Click += new System.EventHandler(this.changeDescriptionButton_Click);
+            // 
+            // overrideBoardCheckBox
+            // 
+            this.overrideBoardCheckBox.AutoSize = true;
+            this.overrideBoardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 11);
+            this.overrideBoardCheckBox.Name = "overrideBoardCheckBox";
+            this.overrideBoardCheckBox.Size = new System.Drawing.Size(155, 20);
+            this.overrideBoardCheckBox.TabIndex = 18;
+            this.overrideBoardCheckBox.Text = "Override game board";
+            this.overrideBoardCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // boardBox
+            // 
+            this.boardBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.boardBox.FormattingEnabled = true;
+            this.boardBox.Location = new System.Drawing.Point(299, 37);
+            this.boardBox.Name = "boardBox";
+            this.boardBox.Size = new System.Drawing.Size(216, 21);
+            this.boardBox.TabIndex = 19;
+            // 
             // CardViewSelectorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(302, 547);
+            this.ClientSize = new System.Drawing.Size(542, 515);
+            this.Controls.Add(this.boardBox);
+            this.Controls.Add(this.overrideBoardCheckBox);
+            this.Controls.Add(this.changeDescriptionButton);
+            this.Controls.Add(this.descriptionTextBox);
             this.Controls.Add(this.overrideCardBackCheckBox);
             this.Controls.Add(this.cardBackBox);
             this.Controls.Add(this.flipCardCheckBox);
@@ -266,5 +314,9 @@
         private System.Windows.Forms.CheckBox flipCardCheckBox;
         private System.Windows.Forms.CheckBox overrideCardBackCheckBox;
         private System.Windows.Forms.ComboBox cardBackBox;
+        private System.Windows.Forms.TextBox descriptionTextBox;
+        private System.Windows.Forms.Button changeDescriptionButton;
+        private System.Windows.Forms.CheckBox overrideBoardCheckBox;
+        private System.Windows.Forms.ComboBox boardBox;
     }
 }

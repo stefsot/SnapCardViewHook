@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO.Ports;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using IL2CppApi.Wrappers;
 using SnapCardViewHook.Core.IL2Cpp;
 // ReSharper disable InconsistentNaming
@@ -13,6 +15,20 @@ namespace SnapCardViewHook.Core
 {
     public static unsafe class SnapTypeDataCollector
     {
+        // namespace and assembly constants
+        private static class Constants
+        {
+            public const string Dll_SecondDinner_CubeDef = "SecondDinner.CubeDef.dll";
+            public const string Namespace_CubeDef = "CubeDef";
+            //
+            public const string Dll_App_View = "App.View.dll";
+            public const string Namespace_CubeUnity_App_View = "CubeUnity.App.View";
+            //
+            public const string Namespace_CubeDef_DefData = "CubeDef.DefData";
+            //
+            public const string Dll_App_Game = "App.Game.dll";
+        }
+
         // delegate type definitions
         public delegate IntPtr CardDefList_Find_delegate_(IntPtr cardDef);
         public delegate IntPtr CardToArtVariantDefList_Find_delegate_(IntPtr artVariantDefId);
@@ -28,20 +44,12 @@ namespace SnapCardViewHook.Core
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, int cardBackDefId, bool isMorph);
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph);
 
-        // namespace and assembly constants
-        private static class Constants
-        {
-            public const string Dll_SecondDinner_CubeDef = "SecondDinner.CubeDef.dll";
-            public const string Namespace_CubeDef = "CubeDef";
-            //
-            public const string Dll_App_View = "App.View.dll";
-            public const string Namespace_CubeUnity_App_View = "CubeUnity.App.View";
-            //
-            public const string Namespace_CubeDef_DefData = "CubeDef.DefData";
-        }
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        public delegate void BoardView_LoadBoard_delegate_(IntPtr thisPtr, IntPtr p1);
 
+        // type data fields
         public static IL2CppFieldInfoWrapper[] CardDef_Id_Fields { get; private set; }
         public static IntPtr CardDefList_Find_methodPtr { get; private set; }
         public static IL2CppFieldInfoWrapper[] ArtVariantDef_Id_Fields { get; private set; }
@@ -64,18 +72,21 @@ namespace SnapCardViewHook.Core
         public static IntPtr CardDetailsCardView_InstancePtr { get; private set; }
         public static CardDetailsCardView_FlipCard_delegate_ CardDetailsCardView_FlipCard { get; private set; }
         public static IL2CppFieldInfoWrapper[] CardBackDefId_Fields { get; private set; }
-
+        public static IL2CppFieldInfoWrapper[] GameBoardDef_Id_Fields { get; private set; }
+        public static BoardView_LoadBoard_delegate_ BoardViewLoadBoardOriginal { get; private set; }
 
         public static CardView_Initialize_delegate_ CardViewInitializeHookOverride { get; set; }
+        public static BoardView_LoadBoard_delegate_ BoardViewLoadBoardHookOverride { get; set; }
         public static bool Loaded { get; private set; }
 
         // 
         private static readonly ConcurrentStack<Action> _uiThreadActions = new ConcurrentStack<Action>();
 
-       // GC fields
-       private static CardView_Initialize_delegate_ _cache_detour_CardView_Initialize;
-       private static void_this__delegate_ _cache_detour_UiVfxManager_RuntimeUpdate;
-       private static void_this__delegate_ _cache_detour_CardDetailsCardView_Initialize;
+        // GC fields
+        private static CardView_Initialize_delegate_ _cache_detour_CardView_Initialize;
+        private static void_this__delegate_ _cache_detour_UiVfxManager_RuntimeUpdate;
+        private static void_this__delegate_ _cache_detour_CardDetailsCardView_Initialize;
+        private static BoardView_LoadBoard_delegate_ _cache_detour_BoardView_LoadBoard;
 
         public static void EnsureLoaded()
         {
@@ -103,7 +114,9 @@ namespace SnapCardViewHook.Core
             Collect_BorderDef(assemblies);
             Collect_UiVfxManager(assemblies);
             Collect_CardDetailsCardView(assemblies);
-            Collect_CardBackDefId(assemblies);
+            Collect_CardBackDef(assemblies);
+            Collect_GameBoardDef(assemblies);
+            Collect_BoardView(assemblies);
         }
 
         private static IL2CppClassWrapper GetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName, string typeNameSpace, string typeName)
@@ -223,7 +236,7 @@ namespace SnapCardViewHook.Core
             // store delegate into class to avoid garbage collection
             // alternatively use GCHandle.Alloc
             var detourDelegate = _cache_detour_CardView_Initialize = new CardView_Initialize_delegate_(CardView_Initialize_Detour);
-            
+
             if (!HookHelper.CreateHook(
                     (void*)method.MethodPointer,
                     (void*)Marshal.GetFunctionPointerForDelegate(detourDelegate),
@@ -379,30 +392,57 @@ namespace SnapCardViewHook.Core
                 Marshal.GetDelegateForFunctionPointer(flipCardMethod.MethodPointer, typeof(CardDetailsCardView_FlipCard_delegate_));
         }
 
-        private static void Collect_CardBackDefId(IL2CppImageWrapper[] assemblies)
+        private static void Collect_CardBackDef(IL2CppImageWrapper[] assemblies)
         {
-            var cardBackDefIdClass = TryGetIL2CppClass(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "CardBackDefId");
-            CardBackDefId_Fields = cardBackDefIdClass.GetFields();
+            CardBackDefId_Fields =
+              GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "CardBackDef");
+        }
+   
+        private static void Collect_GameBoardDef(IL2CppImageWrapper[] assemblies)
+        {
+            GameBoardDef_Id_Fields =
+               GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "GameBoardDef");
+        }
+
+
+        private static void Collect_BoardView(IL2CppImageWrapper[] assemblies)
+        {
+            var boardViewClass = TryGetIL2CppClass(assemblies, Constants.Dll_App_Game, string.Empty, "BoardView");
+            var method = boardViewClass
+               .GetMethods()
+               .FirstOrDefault(f => f.Name == "LoadBoard");
+
+            if (method == null)
+            {
+                ThrowIL2CppMethodError("BoardView.LoadBoard");
+                return;
+            }
+
+            void* originalPtr;
+            var detourDelegate = _cache_detour_BoardView_LoadBoard = new BoardView_LoadBoard_delegate_(BoardView_LoadBoard_Detour);
+
+            if (!HookHelper.CreateHook(
+                    (void*)method.MethodPointer,
+                    (void*)Marshal.GetFunctionPointerForDelegate(detourDelegate),
+                    &originalPtr))
+                throw new Exception("CreateHook for CardDetailsCardView failed");
+
+            BoardViewLoadBoardOriginal = (BoardView_LoadBoard_delegate_)
+                Marshal.GetDelegateForFunctionPointer(new IntPtr(originalPtr), typeof(BoardView_LoadBoard_delegate_));
         }
 
         //
-        // public methods
+        // detours
         //
-
-        public static void ExecuteActionInGameUiThread(Action callback)
-        {
-            _uiThreadActions.Push(callback);
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void CardDetailsCardView_Initialize_Detour(IntPtr thisPtr)
+        private static void CardDetailsCardView_Initialize_Detour(IntPtr thisPtr)
         {
             CardDetailsCardView_InstancePtr = thisPtr;
             CardDetailsCardViewInitializeOriginal(thisPtr);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void UiVfxManager_RuntimeUpdate_Detour(IntPtr thisPtr)
+        private static void UiVfxManager_RuntimeUpdate_Detour(IntPtr thisPtr)
         {
             if (_uiThreadActions.TryPop(out var callback))
                 callback();
@@ -411,11 +451,11 @@ namespace SnapCardViewHook.Core
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void CardView_Initialize_Detour(
+        private static void CardView_Initialize_Detour(
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, int cardBackDefId, bool isMorph)
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph)
         {
             var @delegate = CardViewInitializeHookOverride ?? CardViewInitializeOriginal;
 
@@ -423,6 +463,22 @@ namespace SnapCardViewHook.Core
                 surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart,
                 logoEffectId,
                 cardBackDefId, isMorph);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void BoardView_LoadBoard_Detour(IntPtr thisPtr, IntPtr p1)
+        {
+            var @delegate = BoardViewLoadBoardHookOverride ?? BoardViewLoadBoardOriginal;
+
+            @delegate(thisPtr, p1);
+        }
+
+        //
+        // API
+        //
+        public static void ExecuteActionInGameUiThread(Action callback)
+        {
+            _uiThreadActions.Push(callback);
         }
     }
 }

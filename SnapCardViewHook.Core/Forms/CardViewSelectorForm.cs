@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using IL2CppApi.Wrappers;
@@ -17,6 +18,7 @@ namespace SnapCardViewHook.Core.Forms
         private Dictionary<string, IntPtr> _borderList;
         private Dictionary<string, IL2CppFieldInfoWrapper> _cardDefList;
         private Dictionary<string, IL2CppFieldInfoWrapper> _cardBackList;
+        private Dictionary<string, IL2CppFieldInfoWrapper> _gameBoardList;
 
         private IntPtr _clonedVariantObj = IntPtr.Zero;
 
@@ -35,7 +37,8 @@ namespace SnapCardViewHook.Core.Forms
             _revealEffectList = SnapTypeDataCollector.CardRevealEffectDef_Id_Fields.ToDictionary(f => f.Name);
             _borderList = new Dictionary<string, IntPtr>();
             _cardDefList = SnapTypeDataCollector.CardDef_Id_Fields.ToDictionary(f => f.Name);
-            _cardBackList = SnapTypeDataCollector.CardBackDefId_Fields.Skip(2).ToDictionary(f => f.Name);
+            _cardBackList = SnapTypeDataCollector.CardBackDefId_Fields.ToDictionary(f => f.Name);
+            _gameBoardList = SnapTypeDataCollector.GameBoardDef_Id_Fields.ToDictionary(f => f.Name);
 
             // try to load border data
             GetBorderData();
@@ -47,9 +50,11 @@ namespace SnapCardViewHook.Core.Forms
             borderBox.Items.AddRange(_borderList.Keys.ToArray());
             cardBox.Items.AddRange(_cardDefList.Keys.ToArray());
             cardBackBox.Items.AddRange(_cardBackList.Keys.ToArray());
+            boardBox.Items.AddRange(_gameBoardList.Keys.ToArray());
 
             // set hook override
             SnapTypeDataCollector.CardViewInitializeHookOverride = CardViewInitOverride;
+            SnapTypeDataCollector.BoardViewLoadBoardHookOverride = BoardViewLoadBoardOverride;
         }
 
         private unsafe void GetBorderData()
@@ -76,11 +81,27 @@ namespace SnapCardViewHook.Core.Forms
             }
         }
 
-        public void CardViewInitOverride(
+
+        private void BoardViewLoadBoardOverride(IntPtr thisPtr, IntPtr boardDefId)
+        {
+            boardDefId = GetBoardOverride(boardDefId);
+
+            SnapTypeDataCollector.BoardViewLoadBoardOriginal(thisPtr, boardDefId);
+        }
+
+        private IntPtr GetBoardOverride(IntPtr original)
+        {
+            if (!overrideBoardCheckBox.Checked || boardBox.SelectedItem == null)
+                return original;
+
+            return IL2CppHelper.GetStaticFieldValue(_gameBoardList[boardBox.SelectedItem.ToString()].Ptr);
+        }
+
+        private void CardViewInitOverride(
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, int cardBackDefId, bool isMorph)
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph)
         {
             cardDef = GetCardOverride(cardDef, ref cost, ref power, ref artVariantDefId);
             artVariantDefId = GetVariantOverride(artVariantDefId, cardDef);
@@ -97,12 +118,12 @@ namespace SnapCardViewHook.Core.Forms
                 cardBackDefId, isMorph);
         }
 
-        private int GetCardBackOverride(int original)
+        private IntPtr GetCardBackOverride(IntPtr original)
         {
             if (!overrideCardBackCheckBox.Checked || cardBackBox.SelectedItem == null)
                 return original;
 
-            return IL2CppHelper.GetStaticFieldValue(_cardBackList[cardBackBox.SelectedItem.ToString()].Ptr).ToInt32();
+            return IL2CppHelper.GetStaticFieldValue(_cardBackList[cardBackBox.SelectedItem.ToString()].Ptr);
         }
 
         private IntPtr GetCardOverride(IntPtr original, ref int cost, ref int power, ref IntPtr artVariantDefId)
@@ -202,21 +223,26 @@ namespace SnapCardViewHook.Core.Forms
 
         private void flipCardCheckBox_CheckedChanged_1(object sender, EventArgs e)
         {
-            var @checked = flipCardCheckBox.Checked;
-            SnapTypeDataCollector.ExecuteActionInGameUiThread(() =>
-            {
-                var instance = SnapTypeDataCollector.CardDetailsCardView_InstancePtr;
-                SnapTypeDataCollector.CardDetailsCardView_FlipCard(instance, @checked, 0);
-            });
+            FlipCard(flipCardCheckBox.Checked);
         }
 
         private void CardViewSelectorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             SnapTypeDataCollector.CardViewInitializeHookOverride = null;
+            SnapTypeDataCollector.BoardViewLoadBoardHookOverride = null;
+            FlipCard(false);
+        }
+
+        private void FlipCard(bool flip)
+        {
             SnapTypeDataCollector.ExecuteActionInGameUiThread(() =>
             {
                 var instance = SnapTypeDataCollector.CardDetailsCardView_InstancePtr;
-                SnapTypeDataCollector.CardDetailsCardView_FlipCard(instance, false, 0);
+
+                if(instance == IntPtr.Zero) 
+                    return;
+
+                SnapTypeDataCollector.CardDetailsCardView_FlipCard(instance, flip, 0);
             });
         }
 
@@ -239,6 +265,15 @@ namespace SnapCardViewHook.Core.Forms
             return cloned;
         }
 
+        private unsafe void EditDescription(string newDescription)
+        {
+            var cardId = IL2CppHelper.GetStaticFieldValue(_cardDefList[cardBox.SelectedItem.ToString()].Ptr);
+            var overrideCardDefObjPtr = SnapTypeDataCollector.CardDefList_Find(cardId);
+
+            var monoStrObj = IL2CppHelper.NewString(newDescription);
+            *(IntPtr*)(overrideCardDefObjPtr + 0x18) = monoStrObj;
+        }
+
         private unsafe void SetIdValue(IntPtr idObj, string value)
         {
             var str = (IL2CppString*)idObj;
@@ -250,6 +285,17 @@ namespace SnapCardViewHook.Core.Forms
                 *chars[i] = value[i];
 
             *chars[value.Length] = (char)0;
+        }
+
+        private void changeDescriptionButton_Click(object sender, EventArgs e)
+        {
+            if (descriptionTextBox.Text.Length == 0)
+                return;
+
+            SnapTypeDataCollector.ExecuteActionInGameUiThread(() =>
+            {
+                EditDescription(descriptionTextBox.Text);
+            });
         }
     }
 }
