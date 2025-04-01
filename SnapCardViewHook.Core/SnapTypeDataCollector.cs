@@ -119,6 +119,7 @@ namespace SnapCardViewHook.Core
             Collect_BoardView(assemblies);
         }
 
+      
         private static IL2CppClassWrapper GetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName, string typeNameSpace, string typeName)
         {
             var assembly = assemblies.FirstOrDefault(a => a.Name == assemblyName);
@@ -407,7 +408,7 @@ namespace SnapCardViewHook.Core
 
         private static void Collect_BoardView(IL2CppImageWrapper[] assemblies)
         {
-            var boardViewClass = TryGetIL2CppClass(assemblies, Constants.Dll_App_Game, string.Empty, "BoardView");
+            var boardViewClass = TryGetIL2CppClass(assemblies, Constants.Dll_App_Game, string.Empty, "BoardViewLoader");
             var method = boardViewClass
                .GetMethods()
                .FirstOrDefault(f => f.Name == "LoadBoard");
@@ -425,7 +426,7 @@ namespace SnapCardViewHook.Core
                     (void*)method.MethodPointer,
                     (void*)Marshal.GetFunctionPointerForDelegate(detourDelegate),
                     &originalPtr))
-                throw new Exception("CreateHook for CardDetailsCardView failed");
+                throw new Exception("CreateHook for LoadBoard failed");
 
             BoardViewLoadBoardOriginal = (BoardView_LoadBoard_delegate_)
                 Marshal.GetDelegateForFunctionPointer(new IntPtr(originalPtr), typeof(BoardView_LoadBoard_delegate_));
