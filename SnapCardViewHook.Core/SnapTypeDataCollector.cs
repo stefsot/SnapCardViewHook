@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using IL2CppApi.Wrappers;
+using SnapCardViewHook.Core.Helpers;
 using SnapCardViewHook.Core.IL2Cpp;
 // ReSharper disable InconsistentNaming
 
@@ -93,7 +94,9 @@ namespace SnapCardViewHook.Core
             if (Loaded)
                 return;
 
+            JitHelper.PrepareAllMethods(typeof(SnapTypeDataCollector));
             CollectAllRequiredTypeData();
+
             Loaded = true;
         }
 
@@ -119,7 +122,6 @@ namespace SnapCardViewHook.Core
             Collect_BoardView(assemblies);
         }
 
-      
         private static IL2CppClassWrapper GetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName, string typeNameSpace, string typeName)
         {
             var assembly = assemblies.FirstOrDefault(a => a.Name == assemblyName);
@@ -134,12 +136,12 @@ namespace SnapCardViewHook.Core
 
         private static void ThrowIL2CppTypeError(string name)
         {
-            throw new Exception($"L2CppApi type error, could not locate type '{name}'");
+            throw new Exception($"IL2CppApi type error, could not locate type '{name}'");
         }
 
         private static void ThrowIL2CppMethodError(string name)
         {
-            throw new Exception($"L2CppApi type error, could not locate method '{name}'");
+            throw new Exception($"IL2CppApi type error, could not locate method '{name}'");
         }
 
         private static IL2CppClassWrapper TryGetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName,
@@ -176,7 +178,7 @@ namespace SnapCardViewHook.Core
                 ThrowIL2CppMethodError($"{className}::{methodName}");
                 return;
             }
-            
+
             CardDefList_Find_methodPtr = method.MethodPointer;
             CardDefList_Find = Marshal.GetDelegateForFunctionPointer<CardDefList_Find_delegate_>(CardDefList_Find_methodPtr);
         }
@@ -200,7 +202,7 @@ namespace SnapCardViewHook.Core
 
         private static void Collect_ArtVariantDef(IL2CppImageWrapper[] assemblies)
         {
-            ArtVariantDef_Id_Fields = 
+            ArtVariantDef_Id_Fields =
                 GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "ArtVariantDef");
         }
 
@@ -292,14 +294,14 @@ namespace SnapCardViewHook.Core
                 return;
             }
 
-            CardToArtVariantDefList_Find = 
+            CardToArtVariantDefList_Find =
                 Marshal.GetDelegateForFunctionPointer<CardToArtVariantDefList_Find_delegate_>(method.MethodPointer);
         }
 
         private static void Collect_CardToArtVariantDef(IL2CppImageWrapper[] assemblies)
         {
             var cardToArtVariantDefClass = TryGetIL2CppClass(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "CardToArtVariantDef");
-            
+
             var fieldCardDefId = TryGetField(cardToArtVariantDefClass, "<CardDefId>k__BackingField");
             CardToArtVariantDef_CardDefId_Field_Offset = fieldCardDefId.Offset.ToInt32();
         }
@@ -398,7 +400,7 @@ namespace SnapCardViewHook.Core
             CardBackDefId_Fields =
               GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "CardBackDef");
         }
-   
+
         private static void Collect_GameBoardDef(IL2CppImageWrapper[] assemblies)
         {
             GameBoardDef_Id_Fields =

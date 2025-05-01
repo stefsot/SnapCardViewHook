@@ -54,6 +54,7 @@
     <Compile Include="Forms\CardViewSelectorForm.Designer.cs">
       <DependentUpon>CardViewSelectorForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\JitHelper.cs" />
     <Compile Include="IL2Cpp\Il2CppArray.cs" />
     <Compile Include="IL2Cpp\IL2CppHelper.cs" />
     <Compile Include="IL2Cpp\IL2CppList.cs" />

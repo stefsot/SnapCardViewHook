@@ -32,25 +32,25 @@ namespace SnapCardViewHook.Core.Forms
             SnapTypeDataCollector.EnsureLoaded();
 
             // initialize lists
-            _variantList = SnapTypeDataCollector.ArtVariantDef_Id_Fields.ToDictionary(f => f.Name);
-            _surfaceEffectList = SnapTypeDataCollector.SurfaceEffectDef_Id_Fields.ToDictionary(f => f.Name);
-            _revealEffectList = SnapTypeDataCollector.CardRevealEffectDef_Id_Fields.ToDictionary(f => f.Name);
+            _variantList = SnapTypeDataCollector.ArtVariantDef_Id_Fields?.ToDictionary(f => f.Name);
+            _surfaceEffectList = SnapTypeDataCollector.SurfaceEffectDef_Id_Fields?.ToDictionary(f => f.Name);
+            _revealEffectList = SnapTypeDataCollector.CardRevealEffectDef_Id_Fields?.ToDictionary(f => f.Name);
             _borderList = new Dictionary<string, IntPtr>();
-            _cardDefList = SnapTypeDataCollector.CardDef_Id_Fields.ToDictionary(f => f.Name);
-            _cardBackList = SnapTypeDataCollector.CardBackDefId_Fields.ToDictionary(f => f.Name);
-            _gameBoardList = SnapTypeDataCollector.GameBoardDef_Id_Fields.ToDictionary(f => f.Name);
+            _cardDefList = SnapTypeDataCollector.CardDef_Id_Fields?.ToDictionary(f => f.Name);
+            _cardBackList = SnapTypeDataCollector.CardBackDefId_Fields?.ToDictionary(f => f.Name);
+            _gameBoardList = SnapTypeDataCollector.GameBoardDef_Id_Fields?.ToDictionary(f => f.Name);
 
             // try to load border data
             GetBorderData();
 
             // populate controls
-            surfaceEffectBox.Items.AddRange(_surfaceEffectList.Keys.ToArray());
-            revealEffectBox.Items.AddRange(_revealEffectList.Keys.ToArray());
-            variantBox.Items.AddRange(_variantList.Keys.ToArray());
-            borderBox.Items.AddRange(_borderList.Keys.ToArray());
-            cardBox.Items.AddRange(_cardDefList.Keys.ToArray());
-            cardBackBox.Items.AddRange(_cardBackList.Keys.ToArray());
-            boardBox.Items.AddRange(_gameBoardList.Keys.ToArray());
+            surfaceEffectBox.Items.AddRange(_surfaceEffectList?.Keys.ToArray() ?? Array.Empty<string>());
+            revealEffectBox.Items.AddRange(_revealEffectList?.Keys.ToArray() ?? Array.Empty<string>());
+            variantBox.Items.AddRange(_variantList?.Keys.ToArray() ?? Array.Empty<string>());
+            borderBox.Items.AddRange(_borderList?.Keys.ToArray() ?? Array.Empty<string>());
+            cardBox.Items.AddRange(_cardDefList?.Keys.ToArray() ?? Array.Empty<string>());
+            cardBackBox.Items.AddRange(_cardBackList?.Keys.ToArray() ?? Array.Empty<string>());
+            boardBox.Items.AddRange(_gameBoardList?.Keys.ToArray() ?? Array.Empty<string>());
 
             // set hook override
             SnapTypeDataCollector.CardViewInitializeHookOverride = CardViewInitOverride;
