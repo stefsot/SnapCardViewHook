@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using IL2CppApi.Wrappers;
+using SnapCardViewHook.Core.Data;
 using SnapCardViewHook.Core.IL2Cpp;
 using SnapCardViewHook.Core.Wrappers;
 
@@ -36,7 +37,7 @@ namespace SnapCardViewHook.Core.Forms
             _surfaceEffectList = SnapTypeDataCollector.SurfaceEffectDef_Id_Fields?.ToDictionary(f => f.Name);
             _revealEffectList = SnapTypeDataCollector.CardRevealEffectDef_Id_Fields?.ToDictionary(f => f.Name);
             _borderList = new Dictionary<string, IntPtr>();
-            _cardDefList = SnapTypeDataCollector.CardDef_Id_Fields?.ToDictionary(f => f.Name);
+            _cardDefList =  SnapTypeDataCollector.CardDef_Id_Fields?.ToDictionary(f => f.Name);
             _cardBackList = SnapTypeDataCollector.CardBackDefId_Fields?.ToDictionary(f => f.Name);
             _gameBoardList = SnapTypeDataCollector.GameBoardDef_Id_Fields?.ToDictionary(f => f.Name);
 
@@ -81,6 +82,10 @@ namespace SnapCardViewHook.Core.Forms
             }
         }
 
+        internal void SetCardOverride(string id)
+        {
+            cardBox.SelectedItem = id;
+        }
 
         private void BoardViewLoadBoardOverride(IntPtr thisPtr, IntPtr boardDefId)
         {
@@ -131,9 +136,9 @@ namespace SnapCardViewHook.Core.Forms
             if (!overrideCardCheckBox.Checked || cardBox.SelectedItem == null)
                 return original;
 
-            var cardDefIdEnumValue =
+            var cardDefId =
                 IL2CppHelper.GetStaticFieldValue(_cardDefList[cardBox.SelectedItem.ToString()].Ptr);  
-            var overrideCardDefObjPtr = SnapTypeDataCollector.CardDefList_Find(cardDefIdEnumValue);
+            var overrideCardDefObjPtr = SnapTypeDataCollector.CardDefList_Find(cardDefId);
             
             if(overrideCardDefObjPtr == IntPtr.Zero )
                 return original;
@@ -187,7 +192,7 @@ namespace SnapCardViewHook.Core.Forms
 
             if (cardToArtVariantDef != IntPtr.Zero)
             {
-                var variantCardDefId = *(int*)(cardToArtVariantDef +
+                var variantCardDefId = *(IntPtr*)(cardToArtVariantDef +
                                                SnapTypeDataCollector.CardToArtVariantDef_CardDefId_Field_Offset);
 
                 if (variantCardDefId != new CardDefWrapper(cardDef).CardDefId)
@@ -296,6 +301,16 @@ namespace SnapCardViewHook.Core.Forms
             {
                 EditDescription(descriptionTextBox.Text);
             });
+        }
+
+        private CardCatalogForm _cardCatalogForm;
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if(_cardCatalogForm == null || _cardCatalogForm.IsDisposed)
+                _cardCatalogForm = new CardCatalogForm(this);
+
+            _cardCatalogForm.Show();
         }
     }
 }

@@ -18,15 +18,10 @@ namespace SnapCardViewHook.Core.Helpers
 
             foreach (var method in methods)
             {
-                if (method.ContainsGenericParameters)
+                if (method.ContainsGenericParameters || method.IsGenericMethodDefinition)
                     continue;
 
-                var handle = method.MethodHandle;
-
-                if (method.IsGenericMethodDefinition)
-                    continue;
-
-                RuntimeHelpers.PrepareMethod(handle);
+                RuntimeHelpers.PrepareMethod(method.MethodHandle);
             }
         }
     }

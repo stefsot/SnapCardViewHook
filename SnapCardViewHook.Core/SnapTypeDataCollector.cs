@@ -30,6 +30,7 @@ namespace SnapCardViewHook.Core
             public const string Dll_App_Game = "App.Game.dll";
         }
 
+        //
         // delegate type definitions
         public delegate IntPtr CardDefList_Find_delegate_(IntPtr cardDef);
         public delegate IntPtr CardToArtVariantDefList_Find_delegate_(IntPtr artVariantDefId);
@@ -50,7 +51,8 @@ namespace SnapCardViewHook.Core
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void BoardView_LoadBoard_delegate_(IntPtr thisPtr, IntPtr p1);
 
-        // type data fields
+        //
+        // collected type data fields
         public static IL2CppFieldInfoWrapper[] CardDef_Id_Fields { get; private set; }
         public static IntPtr CardDefList_Find_methodPtr { get; private set; }
         public static IL2CppFieldInfoWrapper[] ArtVariantDef_Id_Fields { get; private set; }
@@ -61,6 +63,8 @@ namespace SnapCardViewHook.Core
         public static int CardDef_CardDefId_Field_Offset { get; private set; }
         public static int CardDef_Power_Field_Offset { get; private set; }
         public static int CardDef_Cost_Field_Offset { get; private set; }
+        public static int CardDef_Description_Field_Offset { get; private set; }
+        public static int CardDef_SeriesStartDates_Field_Offset { get; private set; }
         public static CardView_Initialize_delegate_ CardViewInitializeOriginal { get; private set; }
         public static CardToArtVariantDefList_Find_delegate_ CardToArtVariantDefList_Find { get; private set; }
         public static int CardToArtVariantDef_CardDefId_Field_Offset { get; private set; }
@@ -76,28 +80,42 @@ namespace SnapCardViewHook.Core
         public static IL2CppFieldInfoWrapper[] GameBoardDef_Id_Fields { get; private set; }
         public static BoardView_LoadBoard_delegate_ BoardViewLoadBoardOriginal { get; private set; }
 
+        //
+        // hooks
         public static CardView_Initialize_delegate_ CardViewInitializeHookOverride { get; set; }
         public static BoardView_LoadBoard_delegate_ BoardViewLoadBoardHookOverride { get; set; }
         public static bool Loaded { get; private set; }
 
         // 
+        //
         private static readonly ConcurrentStack<Action> _uiThreadActions = new ConcurrentStack<Action>();
 
+        //
         // GC fields
         private static CardView_Initialize_delegate_ _cache_detour_CardView_Initialize;
         private static void_this__delegate_ _cache_detour_UiVfxManager_RuntimeUpdate;
         private static void_this__delegate_ _cache_detour_CardDetailsCardView_Initialize;
         private static BoardView_LoadBoard_delegate_ _cache_detour_BoardView_LoadBoard;
 
+        private static object initLockObj = new object();
+
+        static SnapTypeDataCollector()
+        {
+            // ensure all methods get compiled
+            JitHelper.PrepareAllMethods(typeof(SnapTypeDataCollector));
+        }
+
         public static void EnsureLoaded()
         {
-            if (Loaded)
-                return;
+            lock(initLockObj)
+            {
+                if (Loaded)
+                    return;
 
-            JitHelper.PrepareAllMethods(typeof(SnapTypeDataCollector));
-            CollectAllRequiredTypeData();
+                CollectAllRequiredTypeData();
 
-            Loaded = true;
+                Loaded = true;
+            }
         }
 
         private static void CollectAllRequiredTypeData()
@@ -265,17 +283,12 @@ namespace SnapCardViewHook.Core
         {
             var cardDefIdClass = TryGetIL2CppClass(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "CardDef");
 
-            var fieldName = TryGetField(cardDefIdClass, "<Name>k__BackingField");
-            CardDef_Name_Field_Offset = fieldName.Offset.ToInt32();
-
-            var fieldCardDefId = TryGetField(cardDefIdClass, "<CardDefId>k__BackingField");
-            CardDef_CardDefId_Field_Offset = fieldCardDefId.Offset.ToInt32();
-
-            var fieldCardPower = TryGetField(cardDefIdClass, "<Power>k__BackingField");
-            CardDef_Power_Field_Offset = fieldCardPower.Offset.ToInt32();
-
-            var fieldCardCost = TryGetField(cardDefIdClass, "<Cost>k__BackingField");
-            CardDef_Cost_Field_Offset = fieldCardCost.Offset.ToInt32();
+            CardDef_Name_Field_Offset = TryGetField(cardDefIdClass, "<Name>k__BackingField").Offset.ToInt32();
+            CardDef_CardDefId_Field_Offset = TryGetField(cardDefIdClass, "<CardDefId>k__BackingField").Offset.ToInt32();
+            CardDef_Power_Field_Offset = TryGetField(cardDefIdClass, "<Power>k__BackingField").Offset.ToInt32();
+            CardDef_Cost_Field_Offset = TryGetField(cardDefIdClass, "<Cost>k__BackingField").Offset.ToInt32();
+            CardDef_Description_Field_Offset = TryGetField(cardDefIdClass, "<Description>k__BackingField").Offset.ToInt32();
+            CardDef_SeriesStartDates_Field_Offset = TryGetField(cardDefIdClass, "<SeriesStartDates>k__BackingField").Offset.ToInt32();
         }
 
         private static void Collect_CardToArtVariantDefList(IL2CppImageWrapper[] assemblies)
@@ -406,7 +419,6 @@ namespace SnapCardViewHook.Core
             GameBoardDef_Id_Fields =
                GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "GameBoardDef");
         }
-
 
         private static void Collect_BoardView(IL2CppImageWrapper[] assemblies)
         {
