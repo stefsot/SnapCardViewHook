@@ -1,14 +1,18 @@
 ﻿using SnapCardViewHook.Core.Data;
+using SnapCardViewHook.Core.Helpers;
 using SnapCardViewHook.Core.Wrappers;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace SnapCardViewHook.Core.Forms
 {
@@ -68,10 +72,20 @@ namespace SnapCardViewHook.Core.Forms
             });
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn
             {
-                HeaderText = "Is Obtainable",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                MinimumWidth = 70,
+                HeaderText = "Tokens",
+                DataPropertyName = "Tokens",
+                DefaultCellStyle =
+                {
+                    WrapMode = DataGridViewTriState.True,
+                }
+            });
+            dataGridView1.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                HeaderText = "Obtainable",
                 DataPropertyName = "IsObtainable"
             });
-
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn
             {
                 HeaderText = "Release Date",
@@ -94,7 +108,7 @@ namespace SnapCardViewHook.Core.Forms
             //dataGridView1.DefaultCellStyle.SelectionBackColor = dataGridView1.DefaultCellStyle.BackColor;
             //dataGridView1.DefaultCellStyle.SelectionForeColor = dataGridView1.DefaultCellStyle.ForeColor;
             //dataGridView1.RowHeadersDefaultCellStyle.SelectionBackColor = dataGridView1.RowHeadersDefaultCellStyle.BackColor;
-            dataGridView1.DefaultCellStyle.SelectionBackColor = Color.DarkCyan;
+            //dataGridView1.DefaultCellStyle.SelectionBackColor = Color.DarkCyan;
 
 
             dataGridView1.AutoResizeColumns();
@@ -106,32 +120,75 @@ namespace SnapCardViewHook.Core.Forms
             if (dataGridView1.Columns[e.ColumnIndex] is DataGridViewButtonColumn)
             {
                 var c = (SnapCardDto)dataGridView1.Rows[e.RowIndex].DataBoundItem;
-                _parent.SetCardOverride(c.GetCardDef().GetId());
+                _parent.SetCardOverride(c.Id);
             }
         }
 
         private class SnapCardDto
         {
-            private CardDefWrapper _cardDef;
-
+            private string _id;
+            private string _name;
+            private string _description;
+            private int _cost;
+            private int _power;
+            private DateTime _releaseDate;
+            private string _obtainable;
+            private string _tokens;
+            
             public SnapCardDto(CardDefWrapper cardDef)
             {
-                _cardDef = cardDef;
+                _id = cardDef.GetId();
+                _name = cardDef.Name;
+                _cost = cardDef.Cost;   
+                _power = cardDef.Power;
+                _releaseDate = cardDef.GetEarliestEnabledDate();
+                _obtainable = cardDef.IsObtainable() ? "Yes" : "No";
+                _tokens = string.Join(", ", cardDef.GetTokens());
+
+                var attributes = cardDef.GetAttributes();
+
+                _description = FormatDescription(cardDef.Description, attributes);
+                _description = StringHelper.CleanupHmtl(_description);
             }
 
-            public CardDefWrapper GetCardDef()
-            { 
-                return _cardDef; 
+            private string FormatDescription(string description, Dictionary<string, int[]> attributes)
+            {
+                return Regex.Replace(description, @"\{card\.(\w+)\}", match =>
+                {
+                    var attr = match.Groups[1].Value;
+                    var indexes = attr.Split('_');
+                    var index = 0;
+
+                    if(indexes.Length > 1)
+                    {
+                        if (int.TryParse(indexes[1], out index))
+                        {
+                            index--;
+                            attr = indexes[0];
+                        }
+                    }
+
+                    if (!attributes.TryGetValue(attr, out var value))
+                        return match.Value;
+
+                    if (value.Length == 0)
+                        return match.Value;
+
+                    if (index >= value.Length)
+                        return $"(!format error!) {match.Value}";
+
+                    return value[index].ToString();
+                });
             }
 
-            public string Id => _cardDef.GetId();
-            public string Name => _cardDef.Name;
-            public string Description => _cardDef.Description;
-            public int Cost => _cardDef.Cost;
-            public int Power => _cardDef.Power;
-
-            public DateTime ReleaseDate => _cardDef.GetEarliestEnabledDate();
-            public string IsObtainable => _cardDef.IsObtainable() ? "Yes" : "No";
+            public string Id => _id;
+            public string Name => _name;
+            public string Description => _description;
+            public int Cost => _cost;
+            public int Power => _power;
+            public DateTime ReleaseDate => _releaseDate;
+            public string IsObtainable => _obtainable;
+            public string Tokens => _tokens;
         }
     }
 }

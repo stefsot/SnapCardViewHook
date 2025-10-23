@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Contexts;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using IL2CppApi.Wrappers;
 using SnapCardViewHook.Core.Data;
+using SnapCardViewHook.Core.Helpers;
 using SnapCardViewHook.Core.IL2Cpp;
 using SnapCardViewHook.Core.Wrappers;
 
@@ -60,25 +63,13 @@ namespace SnapCardViewHook.Core.Forms
 
         private unsafe void GetBorderData()
         {
-            var borders = (IL2CppList*)SnapTypeDataCollector.BorderDefList_Defs_cached_value;
+            var borderList = (IL2CppList*)SnapTypeDataCollector.BorderDefList_Defs_cached_value;
+            var borderDefs = IL2CppHelper.EnumerateList(borderList);
 
-            if (borders == null)
-                return;
-
-            if (borders->Size == 0)
-                return;
-
-            var array = &borders->Array->vector;
-
-            for (var i = 0; i < borders->Size; i++)
+            foreach (var borderDef in borderDefs)
             {
-                var item = array[i];
-
-                if (item == null) 
-                    break;
-
-                var strCast = (IL2CppString*)item;
-                _borderList.Add(new string(strCast->chars), new IntPtr(item));
+                var s = (IL2CppString*)borderDef;
+                _borderList.Add(new string(s->chars), borderDef);
             }
         }
 
@@ -106,7 +97,7 @@ namespace SnapCardViewHook.Core.Forms
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, IntPtr cardBackDefId, bool isMorph)
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue)
         {
             cardDef = GetCardOverride(cardDef, ref cost, ref power, ref artVariantDefId);
             artVariantDefId = GetVariantOverride(artVariantDefId, cardDef);
@@ -120,7 +111,7 @@ namespace SnapCardViewHook.Core.Forms
 
             SnapTypeDataCollector.CardViewInitializeOriginal(thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
                 surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart, logoEffectId,
-                cardBackDefId, isMorph);
+                cardBackDefId, isMorph, setTransparentQueue);
         }
 
         private IntPtr GetCardBackOverride(IntPtr original)
@@ -305,7 +296,7 @@ namespace SnapCardViewHook.Core.Forms
 
         private CardCatalogForm _cardCatalogForm;
 
-        private void button1_Click(object sender, EventArgs e)
+        private void showCatalogButton_Click(object sender, EventArgs e)
         {
             if(_cardCatalogForm == null || _cardCatalogForm.IsDisposed)
                 _cardCatalogForm = new CardCatalogForm(this);

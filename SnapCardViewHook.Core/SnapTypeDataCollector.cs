@@ -46,7 +46,7 @@ namespace SnapCardViewHook.Core
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, IntPtr cardBackDefId, bool isMorph);
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue);
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void BoardView_LoadBoard_delegate_(IntPtr thisPtr, IntPtr p1);
@@ -65,6 +65,8 @@ namespace SnapCardViewHook.Core
         public static int CardDef_Cost_Field_Offset { get; private set; }
         public static int CardDef_Description_Field_Offset { get; private set; }
         public static int CardDef_SeriesStartDates_Field_Offset { get; private set; }
+        public static int CardDef_Attributes_Field_Offset { get; private set; }
+        public static IL2CppFieldInfoWrapper[] DataAttributeType_Fields { get; private set; }
         public static CardView_Initialize_delegate_ CardViewInitializeOriginal { get; private set; }
         public static CardToArtVariantDefList_Find_delegate_ CardToArtVariantDefList_Find { get; private set; }
         public static int CardToArtVariantDef_CardDefId_Field_Offset { get; private set; }
@@ -129,6 +131,7 @@ namespace SnapCardViewHook.Core
             Collect_CardRevealEffectDef(assemblies);
             Collect_CardView(assemblies);
             Collect_CardDef(assemblies);
+            Collect_DataAttributeType(assemblies);
             Collect_CardToArtVariantDefList(assemblies);
             Collect_CardToArtVariantDef(assemblies);
             Collect_BorderDefList(assemblies);
@@ -289,6 +292,14 @@ namespace SnapCardViewHook.Core
             CardDef_Cost_Field_Offset = TryGetField(cardDefIdClass, "<Cost>k__BackingField").Offset.ToInt32();
             CardDef_Description_Field_Offset = TryGetField(cardDefIdClass, "<Description>k__BackingField").Offset.ToInt32();
             CardDef_SeriesStartDates_Field_Offset = TryGetField(cardDefIdClass, "<SeriesStartDates>k__BackingField").Offset.ToInt32();
+            // !! hardcoded value
+            CardDef_Attributes_Field_Offset = 0x10; //TryGetField(cardDefIdClass, "<Attributes>k__BackingField").Offset.ToInt32();
+        }
+
+        private static void Collect_DataAttributeType(IL2CppImageWrapper[] assemblies)
+        {
+            var cardDefIdClass = TryGetIL2CppClass(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef, "DataAttributeType");
+            DataAttributeType_Fields = cardDefIdClass.GetFields().Skip(1).ToArray();
         }
 
         private static void Collect_CardToArtVariantDefList(IL2CppImageWrapper[] assemblies)
@@ -470,14 +481,14 @@ namespace SnapCardViewHook.Core
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, IntPtr cardBackDefId, bool isMorph)
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue)
         {
             var @delegate = CardViewInitializeHookOverride ?? CardViewInitializeOriginal;
 
             @delegate(thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
                 surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart,
                 logoEffectId,
-                cardBackDefId, isMorph);
+                cardBackDefId, isMorph, setTransparentQueue);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

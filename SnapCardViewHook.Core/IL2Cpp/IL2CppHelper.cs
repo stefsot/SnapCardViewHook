@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 // ReSharper disable InconsistentNaming
 
@@ -53,6 +54,31 @@ namespace SnapCardViewHook.Core.IL2Cpp
         internal static IntPtr GetModuleHandle()
         {
             return GameAssemblyHandle;
+        }
+
+        internal static unsafe IntPtr[] EnumerateList(IL2CppList* l)
+        {
+            if (l == null)
+                return Array.Empty<IntPtr>();
+
+            if (l->Size == 0)
+                return Array.Empty<IntPtr>();
+
+            var v = &l->Array->vector;
+            var items = new IntPtr[l->Size];
+
+            for (var i = 0; i < l->Size; i++)
+            {
+                var item = v[i];
+
+                if (item == null)
+                    break;
+
+               
+                items[i] = new IntPtr(item);
+            }
+
+            return items;
         }
     }
 }

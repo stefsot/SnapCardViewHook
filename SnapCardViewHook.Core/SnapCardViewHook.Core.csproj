@@ -62,7 +62,9 @@
       <DependentUpon>CardViewSelectorForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Helpers\JitHelper.cs" />
+    <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="IL2Cpp\Il2CppArray.cs" />
+    <Compile Include="IL2Cpp\IL2CppDictionary.cs" />
     <Compile Include="IL2Cpp\IL2CppHelper.cs" />
     <Compile Include="IL2Cpp\IL2CppList.cs" />
     <Compile Include="IL2Cpp\IL2CppReadOnlyList.cs" />
@@ -91,8 +93,6 @@
       <DependentUpon>CardViewSelectorForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Controls\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

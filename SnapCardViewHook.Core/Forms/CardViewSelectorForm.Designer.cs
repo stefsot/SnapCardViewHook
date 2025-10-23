@@ -48,7 +48,7 @@
             this.changeDescriptionButton = new System.Windows.Forms.Button();
             this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
             this.boardBox = new System.Windows.Forms.ComboBox();
-            this.button1 = new System.Windows.Forms.Button();
+            this.showCatalogButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // surfaceEffectBox
@@ -222,7 +222,7 @@
             // 
             // descriptionTextBox
             // 
-            this.descriptionTextBox.Location = new System.Drawing.Point(314, 189);
+            this.descriptionTextBox.Location = new System.Drawing.Point(453, 142);
             this.descriptionTextBox.Multiline = true;
             this.descriptionTextBox.Name = "descriptionTextBox";
             this.descriptionTextBox.Size = new System.Drawing.Size(216, 93);
@@ -231,7 +231,7 @@
             // 
             // changeDescriptionButton
             // 
-            this.changeDescriptionButton.Location = new System.Drawing.Point(314, 292);
+            this.changeDescriptionButton.Location = new System.Drawing.Point(453, 245);
             this.changeDescriptionButton.Name = "changeDescriptionButton";
             this.changeDescriptionButton.Size = new System.Drawing.Size(216, 26);
             this.changeDescriptionButton.TabIndex = 17;
@@ -260,22 +260,22 @@
             this.boardBox.Size = new System.Drawing.Size(216, 21);
             this.boardBox.TabIndex = 19;
             // 
-            // button1
+            // showCatalogButton
             // 
-            this.button1.Location = new System.Drawing.Point(403, 481);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(127, 23);
-            this.button1.TabIndex = 20;
-            this.button1.Text = "Show card catalog";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.showCatalogButton.Location = new System.Drawing.Point(403, 481);
+            this.showCatalogButton.Name = "showCatalogButton";
+            this.showCatalogButton.Size = new System.Drawing.Size(127, 23);
+            this.showCatalogButton.TabIndex = 20;
+            this.showCatalogButton.Text = "Show card catalog";
+            this.showCatalogButton.UseVisualStyleBackColor = true;
+            this.showCatalogButton.Click += new System.EventHandler(this.showCatalogButton_Click);
             // 
             // CardViewSelectorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(542, 515);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.showCatalogButton);
             this.Controls.Add(this.boardBox);
             this.Controls.Add(this.overrideBoardCheckBox);
             this.Controls.Add(this.changeDescriptionButton);
@@ -330,6 +330,6 @@
         private System.Windows.Forms.Button changeDescriptionButton;
         private System.Windows.Forms.CheckBox overrideBoardCheckBox;
         private System.Windows.Forms.ComboBox boardBox;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button showCatalogButton;
     }
 }
