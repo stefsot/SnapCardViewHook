@@ -1,4 +1,5 @@
-﻿using SnapCardViewHook.Core.Data;
+﻿using Newtonsoft.Json;
+using SnapCardViewHook.Core.Data;
 using SnapCardViewHook.Core.Helpers;
 using SnapCardViewHook.Core.Wrappers;
 using System;
@@ -26,15 +27,16 @@ namespace SnapCardViewHook.Core.Forms
             InitializeComponent();
         }
 
+        SnapCardDto[] _cards;
+
         private void CardCatalogForm_Load(object sender, EventArgs e)
         {
-            var data = new BindingList<SnapCardDto>
-            (
-                SnapCardDefList.Cards.Where(c => c.IsObtainable()).OrderBy(c => c.GetEarliestEnabledDate()).Concat(
+            _cards = SnapCardDefList.Cards.Where(c => c.IsObtainable()).OrderBy(c => c.GetEarliestEnabledDate()).Concat(
                 SnapCardDefList.Cards.Where(c => !c.IsObtainable()).OrderBy(c => c.GetId()))
                 .Select(c => new SnapCardDto(c))
-                .ToList()
-            );
+                .ToArray();
+
+            var data = new BindingList<SnapCardDto>(_cards);
             
             dataGridView1.AutoGenerateColumns = false;
             dataGridView1.DataSource = data;
@@ -62,7 +64,7 @@ namespace SnapCardViewHook.Core.Forms
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn
             {
                 HeaderText = "Description",
-                DataPropertyName = "Description",
+                DataPropertyName = "DescriptionFormatted",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 DefaultCellStyle = 
                 { 
@@ -100,16 +102,8 @@ namespace SnapCardViewHook.Core.Forms
             };
             dataGridView1.Columns.Add(btnCol);
 
-
             dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView1.MultiSelect = false;
-
-            //dataGridView1.EnableHeadersVisualStyles = false;
-            //dataGridView1.DefaultCellStyle.SelectionBackColor = dataGridView1.DefaultCellStyle.BackColor;
-            //dataGridView1.DefaultCellStyle.SelectionForeColor = dataGridView1.DefaultCellStyle.ForeColor;
-            //dataGridView1.RowHeadersDefaultCellStyle.SelectionBackColor = dataGridView1.RowHeadersDefaultCellStyle.BackColor;
-            //dataGridView1.DefaultCellStyle.SelectionBackColor = Color.DarkCyan;
-
 
             dataGridView1.AutoResizeColumns();
             dataGridView1.AutoResizeRows();
@@ -128,13 +122,17 @@ namespace SnapCardViewHook.Core.Forms
         {
             private string _id;
             private string _name;
-            private string _description;
+            private string _descriptionFormatted;
             private int _cost;
             private int _power;
             private DateTime _releaseDate;
+            private bool _isObtainable;
             private string _obtainable;
-            private string _tokens;
-            
+            private string _tokensString;
+            private string[] _tokens;
+            private string _description;
+            private Dictionary<string, int[]> _attributes;
+
             public SnapCardDto(CardDefWrapper cardDef)
             {
                 _id = cardDef.GetId();
@@ -142,13 +140,15 @@ namespace SnapCardViewHook.Core.Forms
                 _cost = cardDef.Cost;   
                 _power = cardDef.Power;
                 _releaseDate = cardDef.GetEarliestEnabledDate();
-                _obtainable = cardDef.IsObtainable() ? "Yes" : "No";
-                _tokens = string.Join(", ", cardDef.GetTokens());
+                _isObtainable = cardDef.IsObtainable();
+                _obtainable = _isObtainable ? "Yes" : "No";
+                _tokensString = string.Join(", ", cardDef.GetTokens());
 
-                var attributes = cardDef.GetAttributes();
+                var attributes = _attributes = cardDef.GetAttributes();
 
-                _description = FormatDescription(cardDef.Description, attributes);
-                _description = StringHelper.CleanupHmtl(_description);
+                _description = cardDef.Description;
+                _descriptionFormatted = FormatDescription(_description, attributes).Replace("\n", string.Empty);
+                _descriptionFormatted = StringHelper.CleanupHmtl(_descriptionFormatted);
             }
 
             private string FormatDescription(string description, Dictionary<string, int[]> attributes)
@@ -181,14 +181,54 @@ namespace SnapCardViewHook.Core.Forms
                 });
             }
 
+            [JsonProperty("cardDefId")]
             public string Id => _id;
+            [JsonProperty("name")]
             public string Name => _name;
+            [JsonProperty("description")]
             public string Description => _description;
+            [JsonProperty("descriptionFormatted")]
+            public string DescriptionFormatted => _descriptionFormatted;
+            [JsonProperty("cost")]
             public int Cost => _cost;
+            [JsonProperty("power")]
             public int Power => _power;
+            [JsonProperty("releaseDate")]
             public DateTime ReleaseDate => _releaseDate;
+            [JsonProperty("obtainable")]
+            public bool Obtainable => _isObtainable;
+            [JsonIgnore]
             public string IsObtainable => _obtainable;
-            public string Tokens => _tokens;
+            [JsonIgnore]
+            public string TokensString => _tokensString;
+            [JsonProperty("tokens")]
+            public string[] Tokens => _tokens;
+            [JsonProperty("attributes")]
+            public Dictionary<string, int[]> Attributes => _attributes;
+        }
+
+        private void exportToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var f = new SaveFileDialog()
+            {
+                Filter = "JSON files (*.json)|*.json",
+                DefaultExt = "json",
+                AddExtension = true,
+                Title = "Export marvel snap card catalog"
+            })
+            {
+                if(f.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        System.IO.File.WriteAllText(f.FileName, JsonConvert.SerializeObject(_cards, Formatting.Indented));
+                    }
+                    catch(Exception x)
+                    {
+                        MessageBox.Show($"There was an error while trying to save the data at \"{f.FileName}\". \nError details:\n\n{x}");
+                    }
+                }
+            }
         }
     }
 }
