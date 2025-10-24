@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SnapCardViewHook.Core.Data;
 using SnapCardViewHook.Core.Helpers;
 using SnapCardViewHook.Core.Wrappers;
@@ -142,7 +143,8 @@ namespace SnapCardViewHook.Core.Forms
                 _releaseDate = cardDef.GetEarliestEnabledDate();
                 _isObtainable = cardDef.IsObtainable();
                 _obtainable = _isObtainable ? "Yes" : "No";
-                _tokensString = string.Join(", ", cardDef.GetTokens());
+                _tokens = cardDef.GetTokens();
+                _tokensString = string.Join(", ", _tokens);
 
                 var attributes = _attributes = cardDef.GetAttributes();
 
