@@ -120,7 +120,7 @@ namespace SnapCardViewHook.Core.Wrappers
                     continue;
 
                 var cardList = (IL2CppList*)entry.value;
-                var defIds = IL2CppHelper.EnumerateList(cardList);
+                var defIds = IL2CppHelper.ListToArray(cardList);
 
                 return defIds.Select(p => new IL2CppStringRef(p).GetObject()).ToArray();
             }
@@ -165,7 +165,7 @@ namespace SnapCardViewHook.Core.Wrappers
                 if(entry.value == null)
                     break;
 
-                var values = IL2CppHelper.EnumerateList((IL2CppList*)entry.value).Select(vv => unchecked((int) vv.ToInt64())).ToArray();
+                var values = IL2CppHelper.ListToArray((IL2CppList*)entry.value).Select(vv => unchecked((int) vv.ToInt64())).ToArray();
                 d.Add(enumNames[(int)entry.key], values);
 
                 return d;

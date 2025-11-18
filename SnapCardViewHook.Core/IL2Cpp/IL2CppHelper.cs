@@ -56,27 +56,34 @@ namespace SnapCardViewHook.Core.IL2Cpp
             return GameAssemblyHandle;
         }
 
-        internal static unsafe IntPtr[] EnumerateList(IL2CppList* l)
+        internal static unsafe void EnumerateList(IL2CppList* l, Action<IntPtr, int> callback)
         {
             if (l == null)
-                return Array.Empty<IntPtr>();
+                return;
 
             if (l->Size == 0)
-                return Array.Empty<IntPtr>();
+                return;
 
             var v = &l->Array->vector;
-            var items = new IntPtr[l->Size];
 
             for (var i = 0; i < l->Size; i++)
             {
                 var item = v[i];
-
-                if (item == null)
-                    break;
-
-               
-                items[i] = new IntPtr(item);
+                callback(new IntPtr(item), i);
             }
+        }
+
+        internal static unsafe IntPtr[] ListToArray(IL2CppList* l)
+        {
+            if (l == null || l->Size == 0)
+                return Array.Empty<IntPtr>();
+
+            var items = new IntPtr[l->Size];
+
+            EnumerateList(l, (item, i) =>
+            {
+                items[i] = item;
+            });
 
             return items;
         }

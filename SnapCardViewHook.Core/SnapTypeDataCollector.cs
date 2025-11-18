@@ -46,7 +46,8 @@ namespace SnapCardViewHook.Core
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue);
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue, 
+            IntPtr factionDefId);
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void BoardView_LoadBoard_delegate_(IntPtr thisPtr, IntPtr p1);
@@ -141,6 +142,7 @@ namespace SnapCardViewHook.Core
             Collect_CardBackDef(assemblies);
             Collect_GameBoardDef(assemblies);
             Collect_BoardView(assemblies);
+
         }
 
         private static IL2CppClassWrapper GetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName, string typeNameSpace, string typeName)
@@ -246,7 +248,7 @@ namespace SnapCardViewHook.Core
             var cardViewClass = TryGetIL2CppClass(assemblies, Constants.Dll_App_View, Constants.Namespace_CubeUnity_App_View, className);
             var method = cardViewClass
                 .GetMethods()
-                .Where(m => m.Name == methodName)
+                .Where(m => m.Name == methodName && m.ParamCount > 0)
                 .OrderByDescending(m => m.ParamCount)
                 .FirstOrDefault();
 
@@ -481,14 +483,15 @@ namespace SnapCardViewHook.Core
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue)
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue,
+            IntPtr factionDefId)
         {
             var @delegate = CardViewInitializeHookOverride ?? CardViewInitializeOriginal;
 
             @delegate(thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
                 surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart,
                 logoEffectId,
-                cardBackDefId, isMorph, setTransparentQueue);
+                cardBackDefId, isMorph, setTransparentQueue, factionDefId);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

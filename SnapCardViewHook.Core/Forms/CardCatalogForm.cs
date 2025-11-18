@@ -78,7 +78,7 @@ namespace SnapCardViewHook.Core.Forms
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 MinimumWidth = 70,
                 HeaderText = "Tokens",
-                DataPropertyName = "Tokens",
+                DataPropertyName = "TokensString",
                 DefaultCellStyle =
                 {
                     WrapMode = DataGridViewTriState.True,

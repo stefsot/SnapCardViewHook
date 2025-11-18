@@ -59,18 +59,24 @@ namespace SnapCardViewHook.Core.Forms
             // set hook override
             SnapTypeDataCollector.CardViewInitializeHookOverride = CardViewInitOverride;
             SnapTypeDataCollector.BoardViewLoadBoardHookOverride = BoardViewLoadBoardOverride;
+
+            // focus form when loaded
+            Activate();
         }
 
         private unsafe void GetBorderData()
         {
             var borderList = (IL2CppList*)SnapTypeDataCollector.BorderDefList_Defs_cached_value;
-            var borderDefs = IL2CppHelper.EnumerateList(borderList);
+            var borderDefs = IL2CppHelper.ListToArray(borderList);
 
-            foreach (var borderDef in borderDefs)
+            IL2CppHelper.EnumerateList(borderList, (item, i) =>
             {
-                var s = (IL2CppString*)borderDef;
-                _borderList.Add(new string(s->chars), borderDef);
-            }
+                if (item == IntPtr.Zero)
+                    return;
+
+                var s = (IL2CppString*)item;
+                _borderList.Add(new string(s->chars), item);
+            });
         }
 
         internal void SetCardOverride(string id)
@@ -97,7 +103,8 @@ namespace SnapCardViewHook.Core.Forms
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue)
+            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue,
+            IntPtr factionDefId)
         {
             cardDef = GetCardOverride(cardDef, ref cost, ref power, ref artVariantDefId);
             artVariantDefId = GetVariantOverride(artVariantDefId, cardDef);
@@ -109,9 +116,12 @@ namespace SnapCardViewHook.Core.Forms
             if (force3DCheckbox.Checked)
                 rarity = 7;
 
-            SnapTypeDataCollector.CardViewInitializeOriginal(thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
-                surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart, logoEffectId,
-                cardBackDefId, isMorph, setTransparentQueue);
+            SnapTypeDataCollector.CardViewInitializeOriginal(
+                thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
+                surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart, 
+                logoEffectId, cardBackDefId, isMorph, setTransparentQueue, 
+                factionDefId
+            );
         }
 
         private IntPtr GetCardBackOverride(IntPtr original)
