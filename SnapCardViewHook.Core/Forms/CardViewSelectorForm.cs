@@ -23,6 +23,7 @@ namespace SnapCardViewHook.Core.Forms
         private Dictionary<string, IL2CppFieldInfoWrapper> _cardDefList;
         private Dictionary<string, IL2CppFieldInfoWrapper> _cardBackList;
         private Dictionary<string, IL2CppFieldInfoWrapper> _gameBoardList;
+        private Dictionary<string, IL2CppFieldInfoWrapper> _factionList;
 
         private IntPtr _clonedVariantObj = IntPtr.Zero;
 
@@ -43,6 +44,7 @@ namespace SnapCardViewHook.Core.Forms
             _cardDefList =  SnapTypeDataCollector.CardDef_Id_Fields?.ToDictionary(f => f.Name);
             _cardBackList = SnapTypeDataCollector.CardBackDefId_Fields?.ToDictionary(f => f.Name);
             _gameBoardList = SnapTypeDataCollector.GameBoardDef_Id_Fields?.ToDictionary(f => f.Name);
+            _factionList = SnapTypeDataCollector.FactionDef_Id_Fields?.ToDictionary(f => f.Name);
 
             // try to load border data
             GetBorderData();
@@ -55,6 +57,7 @@ namespace SnapCardViewHook.Core.Forms
             cardBox.Items.AddRange(_cardDefList?.Keys.ToArray() ?? Array.Empty<string>());
             cardBackBox.Items.AddRange(_cardBackList?.Keys.ToArray() ?? Array.Empty<string>());
             boardBox.Items.AddRange(_gameBoardList?.Keys.ToArray() ?? Array.Empty<string>());
+            factionBox.Items.AddRange(_factionList?.Keys.ToArray() ?? Array.Empty<string>());
 
             // set hook override
             SnapTypeDataCollector.CardViewInitializeHookOverride = CardViewInitOverride;
@@ -112,6 +115,7 @@ namespace SnapCardViewHook.Core.Forms
             cardRevealEffectDefId = GetRevealEffectOverride(cardRevealEffectDefId);
             borderDefId = GetBorderOverride(borderDefId);
             cardBackDefId = GetCardBackOverride(cardBackDefId);
+            factionDefId = GetFactionOverride(factionDefId);
 
             if (force3DCheckbox.Checked)
                 rarity = 7;
@@ -225,6 +229,14 @@ namespace SnapCardViewHook.Core.Forms
                 return original;
 
             return _borderList[borderBox.SelectedItem.ToString()];
+        }
+
+        private IntPtr GetFactionOverride(IntPtr original)
+        {
+            if (!overrideFactionCheckBox.Checked || factionBox.SelectedItem == null)
+                return original;
+
+            return IL2CppHelper.GetStaticFieldValue(_factionList[factionBox.SelectedItem.ToString()].Ptr);
         }
 
         private void flipCardCheckBox_CheckedChanged_1(object sender, EventArgs e)

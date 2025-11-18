@@ -49,6 +49,8 @@
             this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
             this.boardBox = new System.Windows.Forms.ComboBox();
             this.showCatalogButton = new System.Windows.Forms.Button();
+            this.overrideFactionCheckBox = new System.Windows.Forms.CheckBox();
+            this.factionBox = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // surfaceEffectBox
@@ -131,7 +133,7 @@
             this.force3DCheckbox.Checked = true;
             this.force3DCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.force3DCheckbox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.force3DCheckbox.Location = new System.Drawing.Point(34, 481);
+            this.force3DCheckbox.Location = new System.Drawing.Point(34, 549);
             this.force3DCheckbox.Name = "force3DCheckbox";
             this.force3DCheckbox.Size = new System.Drawing.Size(111, 20);
             this.force3DCheckbox.TabIndex = 7;
@@ -192,7 +194,7 @@
             // 
             this.flipCardCheckBox.AutoSize = true;
             this.flipCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipCardCheckBox.Location = new System.Drawing.Point(151, 481);
+            this.flipCardCheckBox.Location = new System.Drawing.Point(151, 549);
             this.flipCardCheckBox.Name = "flipCardCheckBox";
             this.flipCardCheckBox.Size = new System.Drawing.Size(78, 20);
             this.flipCardCheckBox.TabIndex = 13;
@@ -262,7 +264,7 @@
             // 
             // showCatalogButton
             // 
-            this.showCatalogButton.Location = new System.Drawing.Point(403, 481);
+            this.showCatalogButton.Location = new System.Drawing.Point(403, 546);
             this.showCatalogButton.Name = "showCatalogButton";
             this.showCatalogButton.Size = new System.Drawing.Size(127, 23);
             this.showCatalogButton.TabIndex = 20;
@@ -270,11 +272,33 @@
             this.showCatalogButton.UseVisualStyleBackColor = true;
             this.showCatalogButton.Click += new System.EventHandler(this.showCatalogButton_Click);
             // 
+            // overrideFactionCheckBox
+            // 
+            this.overrideFactionCheckBox.AutoSize = true;
+            this.overrideFactionCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.overrideFactionCheckBox.Location = new System.Drawing.Point(34, 480);
+            this.overrideFactionCheckBox.Name = "overrideFactionCheckBox";
+            this.overrideFactionCheckBox.Size = new System.Drawing.Size(120, 20);
+            this.overrideFactionCheckBox.TabIndex = 22;
+            this.overrideFactionCheckBox.Text = "Override faction";
+            this.overrideFactionCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // factionBox
+            // 
+            this.factionBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.factionBox.FormattingEnabled = true;
+            this.factionBox.Location = new System.Drawing.Point(34, 506);
+            this.factionBox.Name = "factionBox";
+            this.factionBox.Size = new System.Drawing.Size(216, 21);
+            this.factionBox.TabIndex = 21;
+            // 
             // CardViewSelectorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(542, 515);
+            this.ClientSize = new System.Drawing.Size(542, 582);
+            this.Controls.Add(this.overrideFactionCheckBox);
+            this.Controls.Add(this.factionBox);
             this.Controls.Add(this.showCatalogButton);
             this.Controls.Add(this.boardBox);
             this.Controls.Add(this.overrideBoardCheckBox);
@@ -331,5 +355,7 @@
         private System.Windows.Forms.CheckBox overrideBoardCheckBox;
         private System.Windows.Forms.ComboBox boardBox;
         private System.Windows.Forms.Button showCatalogButton;
+        private System.Windows.Forms.CheckBox overrideFactionCheckBox;
+        private System.Windows.Forms.ComboBox factionBox;
     }
 }

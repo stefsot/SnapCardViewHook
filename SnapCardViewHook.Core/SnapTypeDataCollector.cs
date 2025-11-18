@@ -55,6 +55,7 @@ namespace SnapCardViewHook.Core
         //
         // collected type data fields
         public static IL2CppFieldInfoWrapper[] CardDef_Id_Fields { get; private set; }
+        public static IL2CppFieldInfoWrapper[] FactionDef_Id_Fields { get; private set; }
         public static IntPtr CardDefList_Find_methodPtr { get; private set; }
         public static IL2CppFieldInfoWrapper[] ArtVariantDef_Id_Fields { get; private set; }
         public static IL2CppFieldInfoWrapper[] SurfaceEffectDef_Id_Fields { get; private set; }
@@ -142,7 +143,7 @@ namespace SnapCardViewHook.Core
             Collect_CardBackDef(assemblies);
             Collect_GameBoardDef(assemblies);
             Collect_BoardView(assemblies);
-
+            Collect_FactionDefId(assemblies);
         }
 
         private static IL2CppClassWrapper GetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName, string typeNameSpace, string typeName)
@@ -186,6 +187,13 @@ namespace SnapCardViewHook.Core
             CardDef_Id_Fields =
                 GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef,
                     "CardDef");
+        }
+
+        private static void Collect_FactionDefId(IL2CppImageWrapper[] assemblies)
+        {
+            FactionDef_Id_Fields =
+                GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef,
+                    "FactionDef");
         }
 
         private static void Collect_CardDefList(IL2CppImageWrapper[] assemblies)
