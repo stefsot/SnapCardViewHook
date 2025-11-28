@@ -40,6 +40,8 @@
   <ItemGroup>
     <Reference Include="OpenCvSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6adad1e807fea099, processorArchitecture=MSIL">
       <HintPath>..\packages\OpenCvSharp4.4.10.0.20240616\lib\net48\OpenCvSharp.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -79,7 +81,10 @@
     <Compile Include="Forms\CardViewSelectorForm.Designer.cs">
       <DependentUpon>CardViewSelectorForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\JitHelper.cs" />
+    <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="IL2Cpp\Il2CppArray.cs" />
+    <Compile Include="IL2Cpp\IL2CppDictionary.cs" />
     <Compile Include="IL2Cpp\IL2CppHelper.cs" />
     <Compile Include="IL2Cpp\IL2CppList.cs" />
     <Compile Include="IL2Cpp\IL2CppReadOnlyList.cs" />
@@ -101,6 +106,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Forms\CardCatalogForm.resx">
+      <DependentUpon>CardCatalogForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\CardViewSelectorForm.resx">
       <DependentUpon>CardViewSelectorForm.cs</DependentUpon>
     </EmbeddedResource>

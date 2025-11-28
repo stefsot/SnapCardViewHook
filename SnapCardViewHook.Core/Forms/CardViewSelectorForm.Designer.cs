@@ -42,6 +42,16 @@
             this.cardBox = new System.Windows.Forms.ComboBox();
             this.button1 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
+            this.flipCardCheckBox = new System.Windows.Forms.CheckBox();
+            this.overrideCardBackCheckBox = new System.Windows.Forms.CheckBox();
+            this.cardBackBox = new System.Windows.Forms.ComboBox();
+            this.descriptionTextBox = new System.Windows.Forms.TextBox();
+            this.changeDescriptionButton = new System.Windows.Forms.Button();
+            this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
+            this.boardBox = new System.Windows.Forms.ComboBox();
+            this.showCatalogButton = new System.Windows.Forms.Button();
+            this.overrideFactionCheckBox = new System.Windows.Forms.CheckBox();
+            this.factionBox = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // surfaceEffectBox
@@ -205,13 +215,124 @@
             this.label1.TabIndex = 12;
             this.label1.Text = "!! setting an invalid variant value will crash the game !!";
             // 
+            // flipCardCheckBox
+            // 
+            this.flipCardCheckBox.AutoSize = true;
+            this.flipCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flipCardCheckBox.Location = new System.Drawing.Point(151, 549);
+            this.flipCardCheckBox.Name = "flipCardCheckBox";
+            this.flipCardCheckBox.Size = new System.Drawing.Size(78, 20);
+            this.flipCardCheckBox.TabIndex = 13;
+            this.flipCardCheckBox.Text = "Flip card";
+            this.flipCardCheckBox.UseVisualStyleBackColor = true;
+            this.flipCardCheckBox.CheckedChanged += new System.EventHandler(this.flipCardCheckBox_CheckedChanged_1);
+            // 
+            // overrideCardBackCheckBox
+            // 
+            this.overrideCardBackCheckBox.AutoSize = true;
+            this.overrideCardBackCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.overrideCardBackCheckBox.Location = new System.Drawing.Point(34, 412);
+            this.overrideCardBackCheckBox.Name = "overrideCardBackCheckBox";
+            this.overrideCardBackCheckBox.Size = new System.Drawing.Size(141, 20);
+            this.overrideCardBackCheckBox.TabIndex = 15;
+            this.overrideCardBackCheckBox.Text = "Override card back";
+            this.overrideCardBackCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // cardBackBox
+            // 
+            this.cardBackBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cardBackBox.FormattingEnabled = true;
+            this.cardBackBox.Location = new System.Drawing.Point(34, 438);
+            this.cardBackBox.Name = "cardBackBox";
+            this.cardBackBox.Size = new System.Drawing.Size(216, 21);
+            this.cardBackBox.TabIndex = 14;
+            // 
+            // descriptionTextBox
+            // 
+            this.descriptionTextBox.Location = new System.Drawing.Point(453, 142);
+            this.descriptionTextBox.Multiline = true;
+            this.descriptionTextBox.Name = "descriptionTextBox";
+            this.descriptionTextBox.Size = new System.Drawing.Size(216, 93);
+            this.descriptionTextBox.TabIndex = 16;
+            this.descriptionTextBox.Visible = false;
+            // 
+            // changeDescriptionButton
+            // 
+            this.changeDescriptionButton.Location = new System.Drawing.Point(453, 245);
+            this.changeDescriptionButton.Name = "changeDescriptionButton";
+            this.changeDescriptionButton.Size = new System.Drawing.Size(216, 26);
+            this.changeDescriptionButton.TabIndex = 17;
+            this.changeDescriptionButton.Text = "Change card text";
+            this.changeDescriptionButton.UseVisualStyleBackColor = true;
+            this.changeDescriptionButton.Visible = false;
+            this.changeDescriptionButton.Click += new System.EventHandler(this.changeDescriptionButton_Click);
+            // 
+            // overrideBoardCheckBox
+            // 
+            this.overrideBoardCheckBox.AutoSize = true;
+            this.overrideBoardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 11);
+            this.overrideBoardCheckBox.Name = "overrideBoardCheckBox";
+            this.overrideBoardCheckBox.Size = new System.Drawing.Size(155, 20);
+            this.overrideBoardCheckBox.TabIndex = 18;
+            this.overrideBoardCheckBox.Text = "Override game board";
+            this.overrideBoardCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // boardBox
+            // 
+            this.boardBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.boardBox.FormattingEnabled = true;
+            this.boardBox.Location = new System.Drawing.Point(299, 37);
+            this.boardBox.Name = "boardBox";
+            this.boardBox.Size = new System.Drawing.Size(216, 21);
+            this.boardBox.TabIndex = 19;
+            // 
+            // showCatalogButton
+            // 
+            this.showCatalogButton.Location = new System.Drawing.Point(403, 546);
+            this.showCatalogButton.Name = "showCatalogButton";
+            this.showCatalogButton.Size = new System.Drawing.Size(127, 23);
+            this.showCatalogButton.TabIndex = 20;
+            this.showCatalogButton.Text = "Show card catalog";
+            this.showCatalogButton.UseVisualStyleBackColor = true;
+            this.showCatalogButton.Click += new System.EventHandler(this.showCatalogButton_Click);
+            // 
+            // overrideFactionCheckBox
+            // 
+            this.overrideFactionCheckBox.AutoSize = true;
+            this.overrideFactionCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.overrideFactionCheckBox.Location = new System.Drawing.Point(34, 480);
+            this.overrideFactionCheckBox.Name = "overrideFactionCheckBox";
+            this.overrideFactionCheckBox.Size = new System.Drawing.Size(120, 20);
+            this.overrideFactionCheckBox.TabIndex = 22;
+            this.overrideFactionCheckBox.Text = "Override faction";
+            this.overrideFactionCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // factionBox
+            // 
+            this.factionBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.factionBox.FormattingEnabled = true;
+            this.factionBox.Location = new System.Drawing.Point(34, 506);
+            this.factionBox.Name = "factionBox";
+            this.factionBox.Size = new System.Drawing.Size(216, 21);
+            this.factionBox.TabIndex = 21;
+            // 
             // CardViewSelectorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(590, 863);
             this.Controls.Add(this.button1);
-            this.ClientSize = new System.Drawing.Size(302, 449);
+            this.Controls.Add(this.overrideFactionCheckBox);
+            this.Controls.Add(this.factionBox);
+            this.Controls.Add(this.showCatalogButton);
+            this.Controls.Add(this.boardBox);
+            this.Controls.Add(this.overrideBoardCheckBox);
+            this.Controls.Add(this.changeDescriptionButton);
+            this.Controls.Add(this.descriptionTextBox);
+            this.Controls.Add(this.overrideCardBackCheckBox);
+            this.Controls.Add(this.cardBackBox);
+            this.Controls.Add(this.flipCardCheckBox);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.overrideCardCheckBox);
             this.Controls.Add(this.cardBox);
@@ -254,5 +375,15 @@
         private System.Windows.Forms.ComboBox cardBox;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox flipCardCheckBox;
+        private System.Windows.Forms.CheckBox overrideCardBackCheckBox;
+        private System.Windows.Forms.ComboBox cardBackBox;
+        private System.Windows.Forms.TextBox descriptionTextBox;
+        private System.Windows.Forms.Button changeDescriptionButton;
+        private System.Windows.Forms.CheckBox overrideBoardCheckBox;
+        private System.Windows.Forms.ComboBox boardBox;
+        private System.Windows.Forms.Button showCatalogButton;
+        private System.Windows.Forms.CheckBox overrideFactionCheckBox;
+        private System.Windows.Forms.ComboBox factionBox;
     }
 }
