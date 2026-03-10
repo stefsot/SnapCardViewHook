@@ -368,11 +368,11 @@ namespace SnapCardViewHook.Core
             var uiVfxManagerClass = TryGetIL2CppClass(assemblies, Constants.Dll_App_View, Constants.Namespace_CubeUnity_App_View, "UiVfxManager");
             var method = uiVfxManagerClass
                 .GetMethods()
-                .FirstOrDefault(f => f.Name == "RuntimeUpdate");
+                .FirstOrDefault(f => f.Name == "OnUpdate");
 
             if (method == null)
             {
-                ThrowIL2CppMethodError("UiVfxManager.RuntimeUpdate");
+                ThrowIL2CppMethodError("UiVfxManager.OnUpdate");
                 return;
             }
 
