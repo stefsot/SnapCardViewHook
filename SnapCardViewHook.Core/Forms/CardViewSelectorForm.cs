@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Contexts;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using IL2CppApi.Wrappers;
+using OpenCvSharp;
 using SnapCardViewHook.Core.Data;
 using SnapCardViewHook.Core.Helpers;
 using SnapCardViewHook.Core.IL2Cpp;
@@ -25,6 +29,11 @@ namespace SnapCardViewHook.Core.Forms
         private Dictionary<string, IL2CppFieldInfoWrapper> _gameBoardList;
         private Dictionary<string, IL2CppFieldInfoWrapper> _factionList;
 
+        private static string VariantToUse = "";
+        private static string SurfaceEffectToUse = "";
+        private static string RevealEffectToUse = "";
+        private static string BorderToUse = "";
+        private static string CardToUse = "";
         private IntPtr _clonedVariantObj = IntPtr.Zero;
 
         public CardViewSelectorForm()
@@ -138,16 +147,26 @@ namespace SnapCardViewHook.Core.Forms
 
         private IntPtr GetCardOverride(IntPtr original, ref int cost, ref int power, ref IntPtr artVariantDefId)
         {
-            if (!overrideCardCheckBox.Checked || cardBox.SelectedItem == null)
-                return original;
+            if (CardToUse == "")
+            {
+                if (!overrideCardCheckBox.Checked || cardBox.SelectedItem == null)
+                    return original;
+            }
+            string cardDefID = (cardBox.SelectedItem == null) ? "" : cardBox.SelectedItem.ToString();
+            if (CardToUse != "")
+            {
+                cardDefID = CardToUse;
+            }
 
-            var cardDefId =
-                IL2CppHelper.GetStaticFieldValue(_cardDefList[cardBox.SelectedItem.ToString()].Ptr);  
-            var overrideCardDefObjPtr = SnapTypeDataCollector.CardDefList_Find(cardDefId);
+
+            var cardDefIdEnumValue =
+                IL2CppHelper.GetStaticFieldValue(_cardDefList[cardDefID].Ptr);  
+            var overrideCardDefObjPtr = SnapTypeDataCollector.CardDefList_Find(cardDefIdEnumValue);
             
             if(overrideCardDefObjPtr == IntPtr.Zero )
                 return original;
             
+
             var objWrapper = new CardDefWrapper(overrideCardDefObjPtr);
 
             cost = objWrapper.Cost;
@@ -159,10 +178,23 @@ namespace SnapCardViewHook.Core.Forms
 
         private unsafe IntPtr GetVariantOverride(IntPtr original, IntPtr cardDef)
         {
+            if (VariantToUse == "")
+            {
+                if (!overrideVariantCheckBox.Checked || variantBox.SelectedItem == null)
+                    return original;
+            }
+            string variant = (variantBox.SelectedItem == null) ? "" : variantBox.SelectedItem.ToString();
+            if (VariantToUse != "")
+            {
+                variant = VariantToUse;
+            }
+
+            var overridePtr = IL2CppHelper.GetStaticFieldValue(_variantList[variant].Ptr);
             if (!overrideVariantCheckBox.Checked || (variantBox.SelectedItem == null && variantBox.Text.Length == 0))
                 return original;
 
             IntPtr variantToOverride;
+            /*
 
             if (variantBox.SelectedItem == null)
             {
@@ -187,8 +219,10 @@ namespace SnapCardViewHook.Core.Forms
             {
                 variantToOverride = IL2CppHelper.GetStaticFieldValue(_variantList[variantBox.SelectedItem.ToString()].Ptr);
             }
+            */
 
-            var overridePtr = variantToOverride;
+            //overridePtr = variantToOverride;
+
 
             if (!ensureVariantMatchCheckbox.Checked)
                 return overridePtr;
@@ -209,26 +243,50 @@ namespace SnapCardViewHook.Core.Forms
 
         private IntPtr GetSurfaceEffectOverride(IntPtr original)
         {
-            if (!overrideSurfaceEffectCheckBox.Checked || surfaceEffectBox.SelectedItem == null)
-                return original;
+            if (SurfaceEffectToUse == "")
+            {
+                if (!overrideSurfaceEffectCheckBox.Checked || surfaceEffectBox.SelectedItem == null)
+                    return original;
+            }
+            string surfaceEffect = (surfaceEffectBox.SelectedItem == null) ? "" : surfaceEffectBox.SelectedItem.ToString();
+            if (SurfaceEffectToUse != "")
+            {
+                surfaceEffect = SurfaceEffectToUse;
+            }
 
-            return IL2CppHelper.GetStaticFieldValue(_surfaceEffectList[surfaceEffectBox.SelectedItem.ToString()].Ptr);
+            return IL2CppHelper.GetStaticFieldValue(_surfaceEffectList[surfaceEffect].Ptr);
         }
 
         private IntPtr GetRevealEffectOverride(IntPtr original)
         {
-            if (!overrideRevealEffectCheckBox.Checked || revealEffectBox.SelectedItem == null)
-                return original;
-
-            return IL2CppHelper.GetStaticFieldValue(_revealEffectList[revealEffectBox.SelectedItem.ToString()].Ptr);
+            if (RevealEffectToUse == "")
+            {
+                if (!overrideRevealEffectCheckBox.Checked || revealEffectBox.SelectedItem == null)
+                    return original;
+            }
+            string revealEffect = (revealEffectBox.SelectedItem == null) ? "" : revealEffectBox.SelectedItem.ToString();
+            if (RevealEffectToUse != "")
+            {
+                revealEffect = RevealEffectToUse;
+            }
+            return IL2CppHelper.GetStaticFieldValue(_revealEffectList[revealEffect].Ptr);
         }
 
         private IntPtr GetBorderOverride(IntPtr original)
         {
-            if (!overrideBorderCheckBox.Checked || borderBox.SelectedItem == null)
-                return original;
+            if (BorderToUse == "")
+            {
+                if (!overrideBorderCheckBox.Checked || borderBox.SelectedItem == null)
+                    return original;
+            }
+            string border = (borderBox.SelectedItem == null) ? "" : borderBox.SelectedItem.ToString();
+            if (BorderToUse != "")
+            {
+                border = BorderToUse;
+            }
 
-            return _borderList[borderBox.SelectedItem.ToString()];
+
+            return _borderList[border];
         }
 
         private IntPtr GetFactionOverride(IntPtr original)
@@ -262,6 +320,116 @@ namespace SnapCardViewHook.Core.Forms
 
                 SnapTypeDataCollector.CardDetailsCardView_FlipCard(instance, flip, 0);
             });
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            RenderAllRevealEffects();
+        }
+
+        private void RenderAllVariants()
+        {
+            try
+            {
+                foreach (string variant in _variantList.Keys)
+                {
+                    int underScoreIndex = variant.IndexOf('_');
+                    if (underScoreIndex != -1)
+                    {
+                        CardToUse = variant.Substring(0, underScoreIndex);
+                    }
+                    VariantToUse = variant;
+
+                    System.Diagnostics.Process process = new System.Diagnostics.Process();
+                    process.StartInfo = new System.Diagnostics.ProcessStartInfo();
+                    process.StartInfo.FileName = "Tester.exe";
+                    process.StartInfo.WorkingDirectory = "C:\\Users\\nesin\\Documents\\GitHub\\SnapCardViewHook\\Tester\\bin\\Debug\\net8.0";
+                    process.StartInfo.Arguments = VariantToUse;
+                    process.Start();
+
+                    process.WaitForExit();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.IO.File.WriteAllText(@"C:\snap\export\Renders\error.txt", ex.ToString());
+            }
+        }
+
+        private void RenderAllBorders()
+        {
+            try
+            {
+                foreach (string border in _borderList.Keys)
+                {
+                    BorderToUse = border;
+
+                    System.Diagnostics.Process process = new System.Diagnostics.Process();
+                    process.StartInfo = new System.Diagnostics.ProcessStartInfo();
+                    process.StartInfo.FileName = "Tester.exe";
+                    process.StartInfo.WorkingDirectory = "C:\\Users\\nesin\\Documents\\GitHub\\SnapCardViewHook\\Tester\\bin\\Debug\\net8.0";
+                    process.StartInfo.Arguments = $"Borders\\{BorderToUse}";
+                    process.Start();
+
+                    process.WaitForExit();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.IO.File.WriteAllText(@"C:\snap\export\Renders\error.txt", ex.ToString());
+            }
+        }
+
+        private void RenderAllSurfaceEffects()
+        {
+            try
+            {
+                foreach (string surfaceEffect in _surfaceEffectList.Keys)
+                {
+                    if (surfaceEffect == "None" || surfaceEffect.Contains("SurfaceEffect"))
+                    {
+                        continue;
+                    }
+                    SurfaceEffectToUse = surfaceEffect;
+
+                    System.Diagnostics.Process process = new System.Diagnostics.Process();
+                    process.StartInfo = new System.Diagnostics.ProcessStartInfo();
+                    process.StartInfo.FileName = "Tester.exe";
+                    process.StartInfo.WorkingDirectory = "C:\\Users\\nesin\\Documents\\GitHub\\SnapCardViewHook\\Tester\\bin\\Debug\\net8.0";
+                    process.StartInfo.Arguments = $"SurfaceEffects\\{SurfaceEffectToUse}";
+                    process.Start();
+
+                    process.WaitForExit();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.IO.File.WriteAllText(@"C:\snap\export\Renders\error.txt", ex.ToString());
+            }
+        }
+
+        private void RenderAllRevealEffects()
+        {
+            try
+            {
+                foreach (string revealEffect in _revealEffectList.Keys)
+                {
+                    RevealEffectToUse = revealEffect;
+
+                    System.Diagnostics.Process process = new System.Diagnostics.Process();
+                    process.StartInfo = new System.Diagnostics.ProcessStartInfo();
+                    process.StartInfo.FileName = "Tester.exe";
+                    process.StartInfo.WorkingDirectory = "C:\\Users\\nesin\\Documents\\GitHub\\SnapCardViewHook\\Tester\\bin\\Debug\\net8.0";
+                    process.StartInfo.Arguments = $"RevealEffects\\{RevealEffectToUse}";
+                    process.Start();
+
+                    process.WaitForExit();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.IO.File.WriteAllText(@"C:\snap\export\Renders\error.txt", ex.ToString());
+            }
         }
 
         private IntPtr CloneIL2CppObject(IntPtr obj, int size)
