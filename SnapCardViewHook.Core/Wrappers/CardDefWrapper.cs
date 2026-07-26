@@ -103,12 +103,12 @@ namespace SnapCardViewHook.Core.Wrappers
             if (cards->_entries == null)
                 return Array.Empty<string>();
 
-            if (cards->_entries->Count == 0)
+            if (cards->_count == 0)
                 return Array.Empty<string>();
 
-            var v = (IL2CppDictionary_Entry*) &cards->_entries->vector;
+            var v = (IL2CppDictionary_Entry<int, IntPtr>*)&cards->_entries->vector;
 
-            for(var i = 0; i < cards->_entries->Count; i++)
+            for(var i = 0; i < cards->_count; i++)
             {
                 var entry = v[i];
 
@@ -116,19 +116,38 @@ namespace SnapCardViewHook.Core.Wrappers
                     continue;
 
                 // compare for enum CardAttributeType.Card_Token = 0
-                if (new IntPtr(entry.key) != IntPtr.Zero)
+                if (entry.key != 0)
                     continue;
 
-                var cardList = (IL2CppList*)entry.value;
-                var defIds = IL2CppHelper.ListToArray(cardList);
+                if (entry.value == IntPtr.Zero)
+                    continue;
+
+                var cardList = (IL2CppList*)entry.value.ToPointer();
+                var defIds = IL2CppHelper.ListToArray<IntPtr>(cardList)
+                    .Where(array => array != IntPtr.Zero)
+                    .SelectMany(array => IL2CppHelper.ArrayToArray<IntPtr>(
+                        (IL2CppArray*)array.ToPointer()))
+                    .ToArray();
 
                 return defIds.Select(p => new IL2CppStringRef(p).GetObject()).ToArray();
             }
 
             return Array.Empty<string>();
         }
-    
-    
+
+        private static IDictionary<int, string> _DataAttributeType_Names;
+        private static IDictionary<int, string> Get_DataAttributeType_Names()
+        {
+            if (_DataAttributeType_Names == null)
+            {
+                _DataAttributeType_Names = SnapTypeDataCollector.DataAttributeType_Fields
+               .Select((value, index) => new { index, value })
+               .ToDictionary(x => x.index, x => x.value.Name);
+            }
+
+            return _DataAttributeType_Names;
+        }
+
         public Dictionary<string, int[]> GetAttributes()
         {
             var d = new Dictionary<string, int[]>();
@@ -147,28 +166,32 @@ namespace SnapCardViewHook.Core.Wrappers
             if (data->_entries == null)
                 return d;
 
-            if (data->_entries->Count == 0)
+            if (data->_count == 0)
                 return d;
 
-            var v = (IL2CppDictionary_Entry*)&data->_entries->vector;
-            var enumNames = SnapTypeDataCollector.DataAttributeType_Fields
-                .Select((value, index) => new { index, value })
-                .ToDictionary(x => x.index, x => x.value.Name);
+            var v = (IL2CppDictionary_Entry<int, IntPtr>*)&data->_entries->vector;
+            var enumNames = Get_DataAttributeType_Names();
 
-            for (var i = 0; i < data->_entries->Count; i++)
+            for (var i = 0; i < data->_count; i++)
             {
                 var entry = v[i];
 
                 if (entry.hashCode < 0)
                     continue;
 
-                if(entry.value == null)
-                    break;
+                if(entry.value == IntPtr.Zero)
+                    continue;
 
-                var values = IL2CppHelper.ListToArray((IL2CppList*)entry.value).Select(vv => unchecked((int) vv.ToInt64())).ToArray();
-                d.Add(enumNames[(int)entry.key], values);
+                var innerLists = IL2CppHelper.ListToArray<IntPtr>(
+                    (IL2CppList*)entry.value.ToPointer());
 
-                return d;
+                var values = innerLists
+                    .Where(array => array != IntPtr.Zero)
+                    .SelectMany(array => IL2CppHelper.ArrayToArray<int>(
+                        (IL2CppArray*)array.ToPointer()))
+                    .ToArray();
+
+                d.Add(enumNames[entry.key], values);
             }
 
             return d;

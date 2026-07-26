@@ -10,6 +10,7 @@
     <RootNamespace>SnapCardViewHook.Core</RootNamespace>
     <AssemblyName>SnapCardViewHook.Core</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>8.0</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -33,6 +34,9 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x64</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' And Exists('LocalTests.cs')">
+    <DefineConstants>$(DefineConstants);LOCAL_TESTS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -64,6 +68,7 @@
     <Compile Include="Forms\CardViewSelectorForm.Designer.cs">
       <DependentUpon>CardViewSelectorForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\HookManager.cs" />
     <Compile Include="Helpers\JitHelper.cs" />
     <Compile Include="Helpers\StringHelper.cs" />
     <Compile Include="IL2Cpp\Il2CppArray.cs" />
@@ -72,6 +77,8 @@
     <Compile Include="IL2Cpp\IL2CppList.cs" />
     <Compile Include="IL2Cpp\IL2CppReadOnlyList.cs" />
     <Compile Include="IL2Cpp\IL2CppStringRef.cs" />
+    <Compile Include="LocalTests.cs"
+             Condition="'$(Configuration)' == 'Debug' And Exists('LocalTests.cs')" />
     <Compile Include="SnapTypeDataCollector.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Wrappers\BorderDefWrapper.cs" />

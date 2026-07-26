@@ -14,5 +14,11 @@ public:
 	{
 		return !(MH_CreateHook(target, detour, pOriginal) || MH_EnableHook(target) || MH_ApplyQueued());
 	}
+
+	static bool DeleteHook(void* target)
+	{
+		const auto status = MH_RemoveHook(target);
+		return status == MH_OK || status == MH_ERROR_NOT_CREATED;
+	}
 };
 

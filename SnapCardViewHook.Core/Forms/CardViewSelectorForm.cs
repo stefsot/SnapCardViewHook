@@ -107,7 +107,7 @@ namespace SnapCardViewHook.Core.Forms
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
             int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue,
-            IntPtr factionDefId)
+            IntPtr factionDefId, IntPtr methodInfo)
         {
             cardDef = GetCardOverride(cardDef, ref cost, ref power, ref artVariantDefId);
             artVariantDefId = GetVariantOverride(artVariantDefId, cardDef);
@@ -124,7 +124,7 @@ namespace SnapCardViewHook.Core.Forms
                 thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
                 surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart, 
                 logoEffectId, cardBackDefId, isMorph, setTransparentQueue, 
-                factionDefId
+                factionDefId, methodInfo
             );
         }
 

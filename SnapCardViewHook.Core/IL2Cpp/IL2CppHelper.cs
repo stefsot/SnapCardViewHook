@@ -1,5 +1,8 @@
-﻿using System;
+﻿using IL2CppApi.Wrappers;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 // ReSharper disable InconsistentNaming
 
@@ -44,6 +47,12 @@ namespace SnapCardViewHook.Core.IL2Cpp
             return value;
         }
 
+        internal static IntPtr GetStaticFieldValue(IL2CppFieldInfoWrapper fieldInfo)
+        {
+            Debug.Assert(fieldInfo.Attributes.HasFlag(FieldAttributes.Static));
+            return GetStaticFieldValue(fieldInfo.Ptr);
+        }
+
         internal static unsafe IntPtr NewString(string s)
         {
             fixed (char* c = s)
@@ -73,17 +82,37 @@ namespace SnapCardViewHook.Core.IL2Cpp
             }
         }
 
+        internal static unsafe T[] ListToArray<T>(IL2CppList* l)
+            where T : unmanaged
+        {
+            if (l == null || l->Array == null || l->Size <= 0)
+                return Array.Empty<T>();
+
+            var items = new T[l->Size];
+            var vector = (T*)&l->Array->vector;
+
+            for (var i = 0; i < l->Size; i++)
+                items[i] = vector[i];
+
+            return items;
+        }
+
         internal static unsafe IntPtr[] ListToArray(IL2CppList* l)
         {
-            if (l == null || l->Size == 0)
-                return Array.Empty<IntPtr>();
+            return ListToArray<IntPtr>(l);
+        }
 
-            var items = new IntPtr[l->Size];
+        internal static unsafe T[] ArrayToArray<T>(IL2CppArray* array)
+            where T : unmanaged
+        {
+            if (array == null || array->Count <= 0)
+                return Array.Empty<T>();
 
-            EnumerateList(l, (item, i) =>
-            {
-                items[i] = item;
-            });
+            var items = new T[array->Count];
+            var vector = (T*)&array->vector;
+
+            for (var i = 0; i < array->Count; i++)
+                items[i] = vector[i];
 
             return items;
         }

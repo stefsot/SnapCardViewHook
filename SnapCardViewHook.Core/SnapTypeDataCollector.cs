@@ -17,7 +17,7 @@ namespace SnapCardViewHook.Core
     public static unsafe class SnapTypeDataCollector
     {
         // namespace and assembly constants
-        private static class Constants
+        internal static class Constants
         {
             public const string Dll_SecondDinner_CubeDef = "SecondDinner.CubeDef.dll";
             public const string Namespace_CubeDef = "CubeDef";
@@ -47,7 +47,7 @@ namespace SnapCardViewHook.Core
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
             int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue, 
-            IntPtr factionDefId);
+            IntPtr factionDefId, IntPtr methodInfo);
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void BoardView_LoadBoard_delegate_(IntPtr thisPtr, IntPtr p1);
@@ -83,6 +83,8 @@ namespace SnapCardViewHook.Core
         public static IL2CppFieldInfoWrapper[] CardBackDefId_Fields { get; private set; }
         public static IL2CppFieldInfoWrapper[] GameBoardDef_Id_Fields { get; private set; }
         public static BoardView_LoadBoard_delegate_ BoardViewLoadBoardOriginal { get; private set; }
+
+        public static IL2CppFieldInfoWrapper[] LocationDef_Id_Fields { get; private set; }
 
         //
         // hooks
@@ -144,6 +146,11 @@ namespace SnapCardViewHook.Core
             Collect_GameBoardDef(assemblies);
             Collect_BoardView(assemblies);
             Collect_FactionDefId(assemblies);
+            Collect_LocationDefId(assemblies);
+
+#if LOCAL_TESTS
+            LocalTests.Init(assemblies);
+#endif
         }
 
         private static IL2CppClassWrapper GetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName, string typeNameSpace, string typeName)
@@ -168,7 +175,7 @@ namespace SnapCardViewHook.Core
             throw new Exception($"IL2CppApi type error, could not locate method '{name}'");
         }
 
-        private static IL2CppClassWrapper TryGetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName,
+        internal static IL2CppClassWrapper TryGetIL2CppClass(IL2CppImageWrapper[] assemblies, string assemblyName,
             string @namespace, string typeName)
         {
             var @class = GetIL2CppClass(assemblies, assemblyName, @namespace, typeName);
@@ -186,7 +193,7 @@ namespace SnapCardViewHook.Core
         {
             CardDef_Id_Fields =
                 GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef,
-                    "CardDef");
+                    "CardDef").Where(f => !f.Attributes.HasFlag(FieldAttributes.Literal)).ToArray();
         }
 
         private static void Collect_FactionDefId(IL2CppImageWrapper[] assemblies)
@@ -194,6 +201,13 @@ namespace SnapCardViewHook.Core
             FactionDef_Id_Fields =
                 GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef,
                     "FactionDef");
+        }
+
+        private static void Collect_LocationDefId(IL2CppImageWrapper[] assemblies)
+        {
+            LocationDef_Id_Fields =
+                GetIdClassFields(assemblies, Constants.Dll_SecondDinner_CubeDef, Constants.Namespace_CubeDef,
+                    "LocationDef");
         }
 
         private static void Collect_CardDefList(IL2CppImageWrapper[] assemblies)
@@ -492,14 +506,14 @@ namespace SnapCardViewHook.Core
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
             IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
             int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue,
-            IntPtr factionDefId)
+            IntPtr factionDefId, IntPtr methodInfo)
         {
             var @delegate = CardViewInitializeHookOverride ?? CardViewInitializeOriginal;
 
             @delegate(thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
                 surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart,
                 logoEffectId,
-                cardBackDefId, isMorph, setTransparentQueue, factionDefId);
+                cardBackDefId, isMorph, setTransparentQueue, factionDefId, methodInfo);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

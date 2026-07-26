@@ -16,13 +16,22 @@ namespace SnapCardViewHook.Core.IL2Cpp
         public IL2CppArray* _entries;
         [FieldOffset(0x20)]
         public int _count;
+        [FieldOffset(0x24)]
+        public int _freeList;
+        [FieldOffset(0x28)]
+        public int _freeCount;
+        [FieldOffset(0x2C)]
+        public int _version;
     }
 
-    public unsafe struct IL2CppDictionary_Entry
+    [StructLayout(LayoutKind.Sequential)]
+    public struct IL2CppDictionary_Entry<TKey, TValue>
+        where TKey : unmanaged
+        where TValue : unmanaged
     {
         public int hashCode;
         public int next;
-        public void* key;
-        public void* value;
-    };
+        public TKey key;
+        public TValue value;
+    }
 }

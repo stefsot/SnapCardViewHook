@@ -362,3 +362,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /NOTES.txt
+/SnapCardViewHook.Core/LocalTests.cs
+/.idea/.idea.SnapCardViewHook/.idea/vcs.xml
+/.idea/.idea.SnapCardViewHook/.idea/indexLayout.xml
+/.idea/.idea.SnapCardViewHook/.idea/encodings.xml
