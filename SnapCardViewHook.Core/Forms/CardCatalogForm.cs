@@ -149,38 +149,89 @@ namespace SnapCardViewHook.Core.Forms
                 var attributes = _attributes = cardDef.GetAttributes();
 
                 _description = cardDef.Description;
-                _descriptionFormatted = FormatDescription(_description, attributes).Replace("\n", string.Empty);
+                _descriptionFormatted = FormatDescription(_description, attributes).Replace("\n", " ");
                 _descriptionFormatted = StringHelper.CleanupHmtl(_descriptionFormatted);
             }
 
             private string FormatDescription(string description, Dictionary<string, int[]> attributes)
             {
-                return Regex.Replace(description, @"\{card\.(\w+)\}", match =>
+                return Regex.Replace(description, @"\{card\.(\w+(?:\.\w+)?)\}", match =>
                 {
-                    var attr = match.Groups[1].Value;
-                    var indexes = attr.Split('_');
-                    var index = 0;
+                    var path = match.Groups[1].Value.Split('.');
 
-                    if(indexes.Length > 1)
-                    {
-                        if (int.TryParse(indexes[1], out index))
-                        {
-                            index--;
-                            attr = indexes[0];
-                        }
-                    }
+                    if (path.Length == 1)
+                        return ResolveAttributeReference(path[0], attributes, match.Value);
 
-                    if (!attributes.TryGetValue(attr, out var value))
-                        return match.Value;
+                    if (path.Length == 2)
+                        return ResolveTokenReference(path[0], path[1], match.Value);
 
-                    if (value.Length == 0)
-                        return match.Value;
-
-                    if (index >= value.Length)
-                        return $"(!format error!) {match.Value}";
-
-                    return value[index].ToString();
+                    return match.Value;
                 });
+            }
+
+            private string ResolveTokenReference(string tokenReference, string propertyReference, string fallback)
+            {
+                ParseIndexedReference(tokenReference, out var tokenAttribute, out var tokenIndex);
+
+                if (!string.Equals(tokenAttribute, "Card_Token", StringComparison.Ordinal))
+                    return fallback;
+
+                if (_tokens == null || tokenIndex < 0 || tokenIndex >= _tokens.Length)
+                    return fallback;
+
+                var token = SnapCardDefList.FindCard(_tokens[tokenIndex]);
+                if (token == null)
+                    return fallback;
+
+                switch (propertyReference)
+                {
+                    case "Power":
+                        return token.Power.ToString();
+                    case "Cost":
+                        return token.Cost.ToString();
+                    case "Name":
+                        return token.Name ?? fallback;
+                    case "Id":
+                    case "CardDefId":
+                        return token.GetId() ?? fallback;
+                    default:
+                        return ResolveAttributeReference(
+                            propertyReference,
+                            token.GetAttributes(),
+                            fallback);
+                }
+            }
+
+            private static string ResolveAttributeReference(
+                string attributeReference,
+                IDictionary<string, int[]> attributes,
+                string fallback)
+            {
+                ParseIndexedReference(attributeReference, out var attribute, out var index);
+
+                if (!attributes.TryGetValue(attribute, out var values) || values.Length == 0)
+                    return fallback;
+
+                if (index < 0 || index >= values.Length)
+                    return $"(!format error!) {fallback}";
+
+                return values[index].ToString();
+            }
+
+            private static void ParseIndexedReference(string reference, out string name, out int index)
+            {
+                name = reference;
+                index = 0;
+
+                var separator = reference.LastIndexOf('_');
+                if (separator < 0 || separator == reference.Length - 1)
+                    return;
+
+                if (!int.TryParse(reference.Substring(separator + 1), out var oneBasedIndex))
+                    return;
+
+                name = reference.Substring(0, separator);
+                index = oneBasedIndex - 1;
             }
 
             [JsonProperty("cardDefId")]
