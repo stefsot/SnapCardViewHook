@@ -51,6 +51,12 @@
             this.showCatalogButton = new System.Windows.Forms.Button();
             this.overrideFactionCheckBox = new System.Windows.Forms.CheckBox();
             this.factionBox = new System.Windows.Forms.ComboBox();
+            this.changeCostCheckBox = new System.Windows.Forms.CheckBox();
+            this.changePowerCheckBox = new System.Windows.Forms.CheckBox();
+            this.costNumeric = new System.Windows.Forms.NumericUpDown();
+            this.powerNumeric = new System.Windows.Forms.NumericUpDown();
+            ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).BeginInit();
             this.SuspendLayout();
             // 
             // surfaceEffectBox
@@ -224,7 +230,7 @@
             // 
             // descriptionTextBox
             // 
-            this.descriptionTextBox.Location = new System.Drawing.Point(453, 142);
+            this.descriptionTextBox.Location = new System.Drawing.Point(447, 328);
             this.descriptionTextBox.Multiline = true;
             this.descriptionTextBox.Name = "descriptionTextBox";
             this.descriptionTextBox.Size = new System.Drawing.Size(216, 93);
@@ -233,7 +239,7 @@
             // 
             // changeDescriptionButton
             // 
-            this.changeDescriptionButton.Location = new System.Drawing.Point(453, 245);
+            this.changeDescriptionButton.Location = new System.Drawing.Point(447, 431);
             this.changeDescriptionButton.Name = "changeDescriptionButton";
             this.changeDescriptionButton.Size = new System.Drawing.Size(216, 26);
             this.changeDescriptionButton.TabIndex = 17;
@@ -246,7 +252,7 @@
             // 
             this.overrideBoardCheckBox.AutoSize = true;
             this.overrideBoardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 11);
+            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 88);
             this.overrideBoardCheckBox.Name = "overrideBoardCheckBox";
             this.overrideBoardCheckBox.Size = new System.Drawing.Size(155, 20);
             this.overrideBoardCheckBox.TabIndex = 18;
@@ -257,7 +263,7 @@
             // 
             this.boardBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.boardBox.FormattingEnabled = true;
-            this.boardBox.Location = new System.Drawing.Point(299, 37);
+            this.boardBox.Location = new System.Drawing.Point(299, 114);
             this.boardBox.Name = "boardBox";
             this.boardBox.Size = new System.Drawing.Size(216, 21);
             this.boardBox.TabIndex = 19;
@@ -292,11 +298,71 @@
             this.factionBox.Size = new System.Drawing.Size(216, 21);
             this.factionBox.TabIndex = 21;
             // 
+            // changeCostCheckBox
+            // 
+            this.changeCostCheckBox.AutoSize = true;
+            this.changeCostCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.changeCostCheckBox.Location = new System.Drawing.Point(299, 11);
+            this.changeCostCheckBox.Name = "changeCostCheckBox";
+            this.changeCostCheckBox.Size = new System.Drawing.Size(103, 20);
+            this.changeCostCheckBox.TabIndex = 23;
+            this.changeCostCheckBox.Text = "Change Cost";
+            this.changeCostCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // changePowerCheckBox
+            // 
+            this.changePowerCheckBox.AutoSize = true;
+            this.changePowerCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.changePowerCheckBox.Location = new System.Drawing.Point(417, 11);
+            this.changePowerCheckBox.Name = "changePowerCheckBox";
+            this.changePowerCheckBox.Size = new System.Drawing.Size(114, 20);
+            this.changePowerCheckBox.TabIndex = 24;
+            this.changePowerCheckBox.Text = "Change Power";
+            this.changePowerCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // costNumeric
+            // 
+            this.costNumeric.Location = new System.Drawing.Point(299, 38);
+            this.costNumeric.Maximum = new decimal(new int[] {
+            99999,
+            0,
+            0,
+            0});
+            this.costNumeric.Minimum = new decimal(new int[] {
+            99999,
+            0,
+            0,
+            -2147483648});
+            this.costNumeric.Name = "costNumeric";
+            this.costNumeric.Size = new System.Drawing.Size(101, 20);
+            this.costNumeric.TabIndex = 25;
+            // 
+            // powerNumeric
+            // 
+            this.powerNumeric.Location = new System.Drawing.Point(414, 38);
+            this.powerNumeric.Maximum = new decimal(new int[] {
+            99999,
+            0,
+            0,
+            0});
+            this.powerNumeric.Minimum = new decimal(new int[] {
+            99999,
+            0,
+            0,
+            -2147483648});
+            this.powerNumeric.Name = "powerNumeric";
+            this.powerNumeric.Size = new System.Drawing.Size(101, 20);
+            this.powerNumeric.TabIndex = 26;
+            // 
             // CardViewSelectorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(542, 582);
+            this.Controls.Add(this.powerNumeric);
+            this.Controls.Add(this.costNumeric);
+            this.Controls.Add(this.changePowerCheckBox);
+            this.Controls.Add(this.changeCostCheckBox);
             this.Controls.Add(this.overrideFactionCheckBox);
             this.Controls.Add(this.factionBox);
             this.Controls.Add(this.showCatalogButton);
@@ -327,6 +393,8 @@
             this.Text = "Card view selector";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CardViewSelectorForm_FormClosing);
             this.Load += new System.EventHandler(this.CardViewSelectorForm_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -357,5 +425,9 @@
         private System.Windows.Forms.Button showCatalogButton;
         private System.Windows.Forms.CheckBox overrideFactionCheckBox;
         private System.Windows.Forms.ComboBox factionBox;
+        private System.Windows.Forms.CheckBox changeCostCheckBox;
+        private System.Windows.Forms.CheckBox changePowerCheckBox;
+        private System.Windows.Forms.NumericUpDown costNumeric;
+        private System.Windows.Forms.NumericUpDown powerNumeric;
     }
 }

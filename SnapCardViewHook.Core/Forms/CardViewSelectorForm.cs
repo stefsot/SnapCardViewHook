@@ -117,6 +117,12 @@ namespace SnapCardViewHook.Core.Forms
             cardBackDefId = GetCardBackOverride(cardBackDefId);
             factionDefId = GetFactionOverride(factionDefId);
 
+            if (changeCostCheckBox.Checked)
+                cost = Convert.ToInt32(costNumeric.Value);
+
+            if (changePowerCheckBox.Checked)
+                power = Convert.ToInt32(powerNumeric.Value);
+
             if (force3DCheckbox.Checked)
                 rarity = 7;
 
