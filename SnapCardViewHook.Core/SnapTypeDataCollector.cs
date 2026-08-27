@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 using IL2CppApi.Wrappers;
 using SnapCardViewHook.Core.Helpers;
@@ -28,6 +29,9 @@ namespace SnapCardViewHook.Core
             public const string Namespace_CubeDef_DefData = "CubeDef.DefData";
             //
             public const string Dll_App_Game = "App.Game.dll";
+            //
+            public const string Dll_Unity_Localization = "Unity.Localization.dll";
+            public const string Namespace_UnityEngine_Localization_Components = "UnityEngine.Localization.Components";
         }
 
         //
@@ -52,6 +56,10 @@ namespace SnapCardViewHook.Core
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void BoardView_LoadBoard_delegate_(IntPtr thisPtr, IntPtr p1);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void LocalizeStringEvent_UpdateString_delegate_(
+            IntPtr thisPtr, IntPtr value, IntPtr methodInfo);
+
         //
         // collected type data fields
         public static IL2CppFieldInfoWrapper[] CardDef_Id_Fields { get; private set; }
@@ -70,6 +78,8 @@ namespace SnapCardViewHook.Core
         public static int CardDef_Attributes_Field_Offset { get; private set; }
         public static IL2CppFieldInfoWrapper[] DataAttributeType_Fields { get; private set; }
         public static CardView_Initialize_delegate_ CardViewInitializeOriginal { get; private set; }
+        public static int CardView_LocalizeDescriptionEvent_Field_Offset { get; private set; }
+        public static LocalizeStringEvent_UpdateString_delegate_ LocalizeStringEventUpdateStringOriginal { get; private set; }
         public static CardToArtVariantDefList_Find_delegate_ CardToArtVariantDefList_Find { get; private set; }
         public static int CardToArtVariantDef_CardDefId_Field_Offset { get; private set; }
         public static int BorderDef_BorderDefId_Field_Offset { get; private set; }
@@ -90,6 +100,8 @@ namespace SnapCardViewHook.Core
         // hooks
         public static CardView_Initialize_delegate_ CardViewInitializeHookOverride { get; set; }
         public static BoardView_LoadBoard_delegate_ BoardViewLoadBoardHookOverride { get; set; }
+        public static Func<IntPtr, string> LocalizeStringEventUpdateStringOverride { get; set; }
+
         public static bool Loaded { get; private set; }
 
         // 
@@ -134,6 +146,7 @@ namespace SnapCardViewHook.Core
             Collect_SurfaceEffectDef(assemblies);
             Collect_CardRevealEffectDef(assemblies);
             Collect_CardView(assemblies);
+            Collect_LocalizeStringEvent(assemblies);
             Collect_CardDef(assemblies);
             Collect_DataAttributeType(assemblies);
             Collect_CardToArtVariantDefList(assemblies);
@@ -268,6 +281,9 @@ namespace SnapCardViewHook.Core
             const string methodName = "Initialize";
 
             var cardViewClass = TryGetIL2CppClass(assemblies, Constants.Dll_App_View, Constants.Namespace_CubeUnity_App_View, className);
+            CardView_LocalizeDescriptionEvent_Field_Offset =
+                TryGetField(cardViewClass, "_LocalizeDescriptionEvent").Offset.ToInt32();
+
             var method = cardViewClass
                 .GetMethods()
                 .Where(m => m.Name == methodName && m.ParamCount > 0)
@@ -293,6 +309,51 @@ namespace SnapCardViewHook.Core
 
             CardViewInitializeOriginal = (CardView_Initialize_delegate_)
                 Marshal.GetDelegateForFunctionPointer(new IntPtr(originalPtr), typeof(CardView_Initialize_delegate_));
+        }
+
+        private static void Collect_LocalizeStringEvent(IL2CppImageWrapper[] assemblies)
+        {
+            const string className = "LocalizeStringEvent";
+            const string methodName = "UpdateString";
+
+            var localizeStringEventClass = TryGetIL2CppClass(
+                assemblies,
+                Constants.Dll_Unity_Localization,
+                Constants.Namespace_UnityEngine_Localization_Components,
+                className);
+
+            if (localizeStringEventClass.IsGeneric || localizeStringEventClass.IsValueType)
+            {
+                ThrowIL2CppTypeError($"{Constants.Namespace_UnityEngine_Localization_Components}.{className}");
+                return;
+            }
+
+            var methods = localizeStringEventClass
+                .GetMethods()
+                .Where(m =>
+                    m.Name == methodName &&
+                    m.ParamCount == 1 &&
+                    !m.IsGeneric &&
+                    m.MethodPointer != IntPtr.Zero &&
+                    !m.Attributes.HasFlag(MethodAttributes.Static) &&
+                    (m.Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Family &&
+                    m.Attributes.HasFlag(MethodAttributes.Virtual) &&
+                    m.ReturnType.Type == Il2CppTypeEnum.IL2CPP_TYPE_VOID &&
+                    m.GetParameters()[0].Type == Il2CppTypeEnum.IL2CPP_TYPE_STRING)
+                .ToArray();
+
+            if (methods.Length != 1)
+            {
+                ThrowIL2CppMethodError($"{className}::{methodName}");
+                return;
+            }
+
+            var detourDelegate = new LocalizeStringEvent_UpdateString_delegate_(LocalizeStringEvent_UpdateString_Detour);
+            
+            LocalizeStringEventUpdateStringOriginal = HookManager.CreateHook(
+                methods[0].MethodPointer,
+                detourDelegate,
+                "LocalizeStringEvent.UpdateString");
         }
 
 
@@ -514,6 +575,26 @@ namespace SnapCardViewHook.Core
                 surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart,
                 logoEffectId,
                 cardBackDefId, isMorph, setTransparentQueue, factionDefId, methodInfo);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void LocalizeStringEvent_UpdateString_Detour(
+            IntPtr thisPtr, IntPtr value, IntPtr methodInfo)
+        {
+            var forwardedValue = value;
+
+            try
+            {
+                var replacement = LocalizeStringEventUpdateStringOverride?.Invoke(thisPtr);
+                if (replacement != null)
+                    forwardedValue = IL2CppHelper.NewString(replacement);
+            }
+            catch
+            {
+                forwardedValue = value;
+            }
+
+            LocalizeStringEventUpdateStringOriginal(thisPtr, forwardedValue, methodInfo);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

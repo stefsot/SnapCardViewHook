@@ -1,4 +1,10 @@
-﻿using System;
+﻿using IL2CppApi.Wrappers;
+using SnapCardViewHook.Core.Data;
+using SnapCardViewHook.Core.Helpers;
+using SnapCardViewHook.Core.IL2Cpp;
+using SnapCardViewHook.Core.Wrappers;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -6,11 +12,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Contexts;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using IL2CppApi.Wrappers;
-using SnapCardViewHook.Core.Data;
-using SnapCardViewHook.Core.Helpers;
-using SnapCardViewHook.Core.IL2Cpp;
-using SnapCardViewHook.Core.Wrappers;
 
 namespace SnapCardViewHook.Core.Forms
 {
@@ -24,6 +25,11 @@ namespace SnapCardViewHook.Core.Forms
         private Dictionary<string, IL2CppFieldInfoWrapper> _cardBackList;
         private Dictionary<string, IL2CppFieldInfoWrapper> _gameBoardList;
         private Dictionary<string, IL2CppFieldInfoWrapper> _factionList;
+
+        private readonly ConcurrentDictionary<IntPtr, byte> _cardDescriptionEvents =
+            new ConcurrentDictionary<IntPtr, byte>();
+        private volatile string _descriptionOverride;
+        private volatile bool _overrideDescription;
 
         private IntPtr _clonedVariantObj = IntPtr.Zero;
 
@@ -62,6 +68,7 @@ namespace SnapCardViewHook.Core.Forms
             // set hook override
             SnapTypeDataCollector.CardViewInitializeHookOverride = CardViewInitOverride;
             SnapTypeDataCollector.BoardViewLoadBoardHookOverride = BoardViewLoadBoardOverride;
+            SnapTypeDataCollector.LocalizeStringEventUpdateStringOverride = GetDescriptionOverride;
 
             // focus form when loaded
             Activate();
@@ -126,12 +133,37 @@ namespace SnapCardViewHook.Core.Forms
             if (force3DCheckbox.Checked)
                 rarity = 7;
 
+            TrackDescriptionEvent(thisPtr);
+
             SnapTypeDataCollector.CardViewInitializeOriginal(
                 thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
                 surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart, 
                 logoEffectId, cardBackDefId, isMorph, setTransparentQueue, 
                 factionDefId, methodInfo
             );
+
+            TrackDescriptionEvent(thisPtr);
+        }
+
+        private void TrackDescriptionEvent(IntPtr cardView)
+        {
+            if (cardView == IntPtr.Zero)
+                return;
+
+            var descriptionEvent = Marshal.ReadIntPtr(
+                cardView,
+                SnapTypeDataCollector.CardView_LocalizeDescriptionEvent_Field_Offset);
+
+            if (descriptionEvent != IntPtr.Zero)
+                _cardDescriptionEvents.TryAdd(descriptionEvent, 0);
+        }
+
+        private string GetDescriptionOverride(IntPtr descriptionEvent)
+        {
+            if (!_overrideDescription || !_cardDescriptionEvents.ContainsKey(descriptionEvent))
+                return null;
+
+            return _descriptionOverride;
         }
 
         private IntPtr GetCardBackOverride(IntPtr original)
@@ -252,8 +284,15 @@ namespace SnapCardViewHook.Core.Forms
 
         private void CardViewSelectorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            // remove overrides
             SnapTypeDataCollector.CardViewInitializeHookOverride = null;
             SnapTypeDataCollector.BoardViewLoadBoardHookOverride = null;
+            SnapTypeDataCollector.LocalizeStringEventUpdateStringOverride = null;
+            _overrideDescription = false;
+            _descriptionOverride = null;
+            _cardDescriptionEvents.Clear();
+
+            // set default flip state to false
             FlipCard(false);
         }
 
@@ -270,9 +309,11 @@ namespace SnapCardViewHook.Core.Forms
             });
         }
 
+        #region experimental
+
         private IntPtr CloneIL2CppObject(IntPtr obj, int size)
         {
-            if(obj == IntPtr.Zero)
+            if (obj == IntPtr.Zero)
                 return IntPtr.Zero;
 
             var cloned = Marshal.AllocHGlobal(size);
@@ -282,20 +323,11 @@ namespace SnapCardViewHook.Core.Forms
                 var source = (byte*)obj;
                 var target = (byte*)cloned;
 
-                for(var i = 0; i < size; i++)
+                for (var i = 0; i < size; i++)
                     target[i] = source[i];
             }
 
             return cloned;
-        }
-
-        private unsafe void EditDescription(string newDescription)
-        {
-            var cardId = IL2CppHelper.GetStaticFieldValue(_cardDefList[cardBox.SelectedItem.ToString()].Ptr);
-            var overrideCardDefObjPtr = SnapTypeDataCollector.CardDefList_Find(cardId);
-
-            var monoStrObj = IL2CppHelper.NewString(newDescription);
-            *(IntPtr*)(overrideCardDefObjPtr + 0x18) = monoStrObj;
         }
 
         private unsafe void SetIdValue(IntPtr idObj, string value)
@@ -311,16 +343,18 @@ namespace SnapCardViewHook.Core.Forms
             *chars[value.Length] = (char)0;
         }
 
-        private void changeDescriptionButton_Click(object sender, EventArgs e)
+        private void descriptionTextBox_TextChanged(object sender, EventArgs e)
         {
-            if (descriptionTextBox.Text.Length == 0)
-                return;
-
-            SnapTypeDataCollector.ExecuteActionInGameUiThread(() =>
-            {
-                EditDescription(descriptionTextBox.Text);
-            });
+            _descriptionOverride = descriptionTextBox.Text;
         }
+
+        private void overrideDescriptionCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            _descriptionOverride = descriptionTextBox.Text;
+            _overrideDescription = overrideDescriptionCheckBox.Checked;
+        }
+
+        #endregion
 
         private CardCatalogForm _cardCatalogForm;
 

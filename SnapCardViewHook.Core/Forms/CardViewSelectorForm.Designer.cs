@@ -45,7 +45,7 @@
             this.overrideCardBackCheckBox = new System.Windows.Forms.CheckBox();
             this.cardBackBox = new System.Windows.Forms.ComboBox();
             this.descriptionTextBox = new System.Windows.Forms.TextBox();
-            this.changeDescriptionButton = new System.Windows.Forms.Button();
+            this.overrideDescriptionCheckBox = new System.Windows.Forms.CheckBox();
             this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
             this.boardBox = new System.Windows.Forms.ComboBox();
             this.showCatalogButton = new System.Windows.Forms.Button();
@@ -230,29 +230,32 @@
             // 
             // descriptionTextBox
             // 
-            this.descriptionTextBox.Location = new System.Drawing.Point(447, 328);
+            this.descriptionTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.descriptionTextBox.Location = new System.Drawing.Point(299, 114);
             this.descriptionTextBox.Multiline = true;
             this.descriptionTextBox.Name = "descriptionTextBox";
-            this.descriptionTextBox.Size = new System.Drawing.Size(216, 93);
+            this.descriptionTextBox.Size = new System.Drawing.Size(216, 96);
             this.descriptionTextBox.TabIndex = 16;
-            this.descriptionTextBox.Visible = false;
+            this.descriptionTextBox.Text = "<b>Ongoing:</b> Test <color=#ff2c2c>text</color> change.";
+            this.descriptionTextBox.TextChanged += new System.EventHandler(this.descriptionTextBox_TextChanged);
             // 
-            // changeDescriptionButton
+            // overrideDescriptionCheckBox
             // 
-            this.changeDescriptionButton.Location = new System.Drawing.Point(447, 431);
-            this.changeDescriptionButton.Name = "changeDescriptionButton";
-            this.changeDescriptionButton.Size = new System.Drawing.Size(216, 26);
-            this.changeDescriptionButton.TabIndex = 17;
-            this.changeDescriptionButton.Text = "Change card text";
-            this.changeDescriptionButton.UseVisualStyleBackColor = true;
-            this.changeDescriptionButton.Visible = false;
-            this.changeDescriptionButton.Click += new System.EventHandler(this.changeDescriptionButton_Click);
+            this.overrideDescriptionCheckBox.AutoSize = true;
+            this.overrideDescriptionCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.overrideDescriptionCheckBox.Location = new System.Drawing.Point(299, 88);
+            this.overrideDescriptionCheckBox.Name = "overrideDescriptionCheckBox";
+            this.overrideDescriptionCheckBox.Size = new System.Drawing.Size(131, 20);
+            this.overrideDescriptionCheckBox.TabIndex = 17;
+            this.overrideDescriptionCheckBox.Text = "Replace card text";
+            this.overrideDescriptionCheckBox.UseVisualStyleBackColor = true;
+            this.overrideDescriptionCheckBox.CheckedChanged += new System.EventHandler(this.overrideDescriptionCheckBox_CheckedChanged);
             // 
             // overrideBoardCheckBox
             // 
             this.overrideBoardCheckBox.AutoSize = true;
             this.overrideBoardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 88);
+            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 237);
             this.overrideBoardCheckBox.Name = "overrideBoardCheckBox";
             this.overrideBoardCheckBox.Size = new System.Drawing.Size(155, 20);
             this.overrideBoardCheckBox.TabIndex = 18;
@@ -263,7 +266,7 @@
             // 
             this.boardBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.boardBox.FormattingEnabled = true;
-            this.boardBox.Location = new System.Drawing.Point(299, 114);
+            this.boardBox.Location = new System.Drawing.Point(299, 263);
             this.boardBox.Name = "boardBox";
             this.boardBox.Size = new System.Drawing.Size(216, 21);
             this.boardBox.TabIndex = 19;
@@ -368,7 +371,7 @@
             this.Controls.Add(this.showCatalogButton);
             this.Controls.Add(this.boardBox);
             this.Controls.Add(this.overrideBoardCheckBox);
-            this.Controls.Add(this.changeDescriptionButton);
+            this.Controls.Add(this.overrideDescriptionCheckBox);
             this.Controls.Add(this.descriptionTextBox);
             this.Controls.Add(this.overrideCardBackCheckBox);
             this.Controls.Add(this.cardBackBox);
@@ -419,7 +422,7 @@
         private System.Windows.Forms.CheckBox overrideCardBackCheckBox;
         private System.Windows.Forms.ComboBox cardBackBox;
         private System.Windows.Forms.TextBox descriptionTextBox;
-        private System.Windows.Forms.Button changeDescriptionButton;
+        private System.Windows.Forms.CheckBox overrideDescriptionCheckBox;
         private System.Windows.Forms.CheckBox overrideBoardCheckBox;
         private System.Windows.Forms.ComboBox boardBox;
         private System.Windows.Forms.Button showCatalogButton;

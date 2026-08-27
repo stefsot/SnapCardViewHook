@@ -13,7 +13,7 @@ namespace Launcher
             // wait for marvel snap process
             while (Loader.GetActiveSnapProcess() == null)
             {
-                ConsoleWriteAndWait("MarvelSnap is not running, launch MarvelSnap and then press any key to retry", 
+                ConsoleWriteAndWait("Marvel Snap is not running. Launch Marvel Snap, then press any key to retry.", 
                                     ConsoleColor.Yellow);
             }
 
@@ -24,8 +24,8 @@ namespace Launcher
             }
             catch (Exception e)
             {
-                ConsoleWriteAndWait("An exception has occured. It might help running as administrator, " +
-                                    "please make sure your antivirus is not blocking any required files.\n\n" +
+                ConsoleWriteAndWait("An exception has occurred. Running the launcher as an administrator might help. " +
+                                    "Please make sure your antivirus is not blocking any required files.\n\n" +
                                     $"Exception details:\n{e}", 
                                     ConsoleColor.Red);
                 return;
@@ -34,8 +34,8 @@ namespace Launcher
             // injection failed 
             // should almost never happen
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Injection failed, make sure your antivirus hasn't deleted any required files.");
-            Console.WriteLine("!!! No support is provided for this software, don't contact me for fixes, help or support !!!");
+            Console.WriteLine("Injection failed. Make sure your antivirus hasn't deleted any required files.");
+            Console.WriteLine("!!! No support is provided for this software. Do not contact me for fixes, help, or support. !!!");
             
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine("\nPress any key to exit...");
