@@ -38,6 +38,17 @@ namespace SnapCardViewHook.Core.Forms
             InitializeComponent();
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            TopMost = true;
+            BringToFront();
+            Activate();
+
+            BeginInvoke(new Action(() => TopMost = false));
+        }
+
         private unsafe void CardViewSelectorForm_Load(object sender, EventArgs e)
         {
             SnapTypeDataCollector.EnsureLoaded();
@@ -70,8 +81,6 @@ namespace SnapCardViewHook.Core.Forms
             SnapTypeDataCollector.BoardViewLoadBoardHookOverride = BoardViewLoadBoardOverride;
             SnapTypeDataCollector.LocalizeStringEventUpdateStringOverride = GetDescriptionOverride;
 
-            // focus form when loaded
-            Activate();
         }
 
         private unsafe void GetBorderData()
