@@ -137,7 +137,31 @@ LRESULT MessageHookProc(int nCode, WPARAM wparam, LPARAM lparam)
 			const auto injectorData = static_cast<InjectorData^>(serializer->Deserialize(stringReader));
 
 			System::Diagnostics::Debug::WriteLine(System::String::Format("About to load assembly {0}", injectorData->AssemblyName));
-			auto assembly = System::Reflection::Assembly::LoadFile(injectorData->AssemblyName);
+
+			System::Reflection::Assembly^ assembly;
+			try
+			{
+				assembly = System::Reflection::Assembly::LoadFile(injectorData->AssemblyName);
+			}
+			catch (System::Exception^ exception)
+			{
+				const auto errorMessage = System::String::Format(
+					"SnapCardViewHook could not load the following file:\n\n{0}\n\n"
+					"Windows may be blocking files downloaded from the Internet. Close SNAP, "
+					"right-click the original downloaded ZIP, select Properties > Unblock, "
+					"then extract it again.\n\nError details:\n{1}",
+					injectorData->AssemblyName,
+					exception->Message);
+
+				const pin_ptr<const wchar_t> pinnedErrorMessage = PtrToStringChars(errorMessage);
+				::MessageBoxW(
+					msg->hwnd,
+					pinnedErrorMessage,
+					L"SnapCardViewHook - File load failed",
+					MB_OK | MB_ICONERROR | MB_TOPMOST);
+
+				return CallNextHookEx(_messageHookHandle, nCode, wparam, lparam);
+			}
 
 			if (assembly != nullptr)
 			{

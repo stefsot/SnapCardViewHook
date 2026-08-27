@@ -304,9 +304,9 @@
             this.changeCostCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.changeCostCheckBox.Location = new System.Drawing.Point(299, 11);
             this.changeCostCheckBox.Name = "changeCostCheckBox";
-            this.changeCostCheckBox.Size = new System.Drawing.Size(103, 20);
+            this.changeCostCheckBox.Size = new System.Drawing.Size(96, 20);
             this.changeCostCheckBox.TabIndex = 23;
-            this.changeCostCheckBox.Text = "Change Cost";
+            this.changeCostCheckBox.Text = "Modify Cost";
             this.changeCostCheckBox.UseVisualStyleBackColor = true;
             // 
             // changePowerCheckBox
@@ -315,9 +315,9 @@
             this.changePowerCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.changePowerCheckBox.Location = new System.Drawing.Point(417, 11);
             this.changePowerCheckBox.Name = "changePowerCheckBox";
-            this.changePowerCheckBox.Size = new System.Drawing.Size(114, 20);
+            this.changePowerCheckBox.Size = new System.Drawing.Size(107, 20);
             this.changePowerCheckBox.TabIndex = 24;
-            this.changePowerCheckBox.Text = "Change Power";
+            this.changePowerCheckBox.Text = "Modify Power";
             this.changePowerCheckBox.UseVisualStyleBackColor = true;
             // 
             // costNumeric
