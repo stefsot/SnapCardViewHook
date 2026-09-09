@@ -18,6 +18,7 @@ The overrides are local and visual only. They do not change your collection, acc
 - Replace card descriptions globally while the option is enabled. TextMeshPro rich-text tags such as `<b>` and `<color>` are supported.
 - Override the displayed game board.
 - Browse and export the in-game card catalog.
+- Capture card images and videos with optional transparent backgrounds.
 
 Most changes are applied when a card or board view is initialized. Settings are not saved between launches, and closing the selector disables its active overrides.
 
@@ -29,10 +30,15 @@ Requirements:
 - [.NET Framework 4.8 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48).
 - The latest [Microsoft Visual C++ Redistributable v14 for x64](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist#latest-supported-redistributable-version).
 
+Two prebuilt downloads are available:
+
+- `snapcardviewhook_release.zip` — without FFmpeg; video recording requires your own `ffmpeg.exe`.
+- `snapcardviewhook_release_with_ffmpeg.zip` — includes FFmpeg for video recording.
+
 To install and run it:
 
 1. Close MARVEL SNAP.
-2. Download the prebuilt ZIP from the [latest release](https://github.com/stefsot/SnapCardViewHook/releases/latest). Do not download GitHub's automatically generated source archive unless you intend to build the project yourself.
+2. Download your preferred ZIP from the [latest release](https://github.com/stefsot/SnapCardViewHook/releases/latest). Do not download GitHub's automatically generated source archive unless you intend to build the project yourself.
 3. Before extracting it, right-click the downloaded ZIP, select **Properties**, enable **Unblock** if that option is present, and select **Apply**.
 4. Extract the entire ZIP into its own folder. Keep `Launcher.exe` and all included DLLs together; do not run the launcher from inside the ZIP.
 5. Start MARVEL SNAP.

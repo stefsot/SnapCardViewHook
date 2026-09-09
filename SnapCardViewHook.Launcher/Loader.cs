@@ -7,13 +7,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Launcher
+namespace SnapCardViewHook.Launcher
 {
     internal static class Loader
     {
+        public static string TargetProcessName { get; set; } = "SNAP";
+        
         public static Process GetActiveSnapProcess()
         {
-            return Process.GetProcessesByName("SNAP").FirstOrDefault();
+            return Process.GetProcessesByName(TargetProcessName).FirstOrDefault();
         }
 
         public static bool Inject(string settings = null)
@@ -29,7 +31,7 @@ namespace Launcher
             {
                 AssemblyName = type.Assembly.Location,
                 ClassName = type.FullName,
-                MethodName = "Init",
+                MethodName = nameof(Bootstrap.Init),
                 SettingsFile = settings
             };
 

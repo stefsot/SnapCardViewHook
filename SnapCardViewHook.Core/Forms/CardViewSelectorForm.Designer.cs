@@ -49,6 +49,7 @@
             this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
             this.boardBox = new System.Windows.Forms.ComboBox();
             this.showCatalogButton = new System.Windows.Forms.Button();
+            this.captureCardButton = new System.Windows.Forms.Button();
             this.overrideFactionCheckBox = new System.Windows.Forms.CheckBox();
             this.factionBox = new System.Windows.Forms.ComboBox();
             this.changeCostCheckBox = new System.Windows.Forms.CheckBox();
@@ -280,6 +281,16 @@
             this.showCatalogButton.Text = "Show card catalog";
             this.showCatalogButton.UseVisualStyleBackColor = true;
             this.showCatalogButton.Click += new System.EventHandler(this.showCatalogButton_Click);
+            //
+            // captureCardButton
+            //
+            this.captureCardButton.Location = new System.Drawing.Point(249, 546);
+            this.captureCardButton.Name = "captureCardButton";
+            this.captureCardButton.Size = new System.Drawing.Size(145, 23);
+            this.captureCardButton.TabIndex = 27;
+            this.captureCardButton.Text = "Capture card";
+            this.captureCardButton.UseVisualStyleBackColor = true;
+            this.captureCardButton.Click += new System.EventHandler(this.captureCardButton_Click);
             // 
             // overrideFactionCheckBox
             // 
@@ -369,6 +380,7 @@
             this.Controls.Add(this.overrideFactionCheckBox);
             this.Controls.Add(this.factionBox);
             this.Controls.Add(this.showCatalogButton);
+            this.Controls.Add(this.captureCardButton);
             this.Controls.Add(this.boardBox);
             this.Controls.Add(this.overrideBoardCheckBox);
             this.Controls.Add(this.overrideDescriptionCheckBox);
@@ -426,6 +438,7 @@
         private System.Windows.Forms.CheckBox overrideBoardCheckBox;
         private System.Windows.Forms.ComboBox boardBox;
         private System.Windows.Forms.Button showCatalogButton;
+        private System.Windows.Forms.Button captureCardButton;
         private System.Windows.Forms.CheckBox overrideFactionCheckBox;
         private System.Windows.Forms.ComboBox factionBox;
         private System.Windows.Forms.CheckBox changeCostCheckBox;

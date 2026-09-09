@@ -108,6 +108,9 @@ namespace SnapCardViewHook.Core
         //
         private static readonly ConcurrentStack<Action> _uiThreadActions = new ConcurrentStack<Action>();
 
+        private static readonly ConcurrentDictionary<Action, byte> _uiThreadCallbacks =
+            new ConcurrentDictionary<Action, byte>();
+
         //
         // GC fields
         private static CardView_Initialize_delegate_ _cache_detour_CardView_Initialize;
@@ -555,9 +558,12 @@ namespace SnapCardViewHook.Core
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void UiVfxManager_RuntimeUpdate_Detour(IntPtr thisPtr)
         {
-            if (_uiThreadActions.TryPop(out var callback))
-                callback();
+            if (_uiThreadActions.TryPop(out var action))
+                action();
 
+            foreach (var callback in _uiThreadCallbacks.Keys)
+                callback();
+            
             UiVfxManagerRuntimeUpdateOriginal(thisPtr);
         }
 
@@ -611,6 +617,16 @@ namespace SnapCardViewHook.Core
         public static void ExecuteActionInGameUiThread(Action callback)
         {
             _uiThreadActions.Push(callback);
+        }
+        
+        public static void RegisterGameUiCallback(Action callback)
+        {
+            _uiThreadCallbacks.TryAdd(callback, 0);
+        }
+        
+        public static void RemoveGameUiCallback(Action callback)
+        {
+            _uiThreadCallbacks.TryRemove(callback, out _);
         }
     }
 }

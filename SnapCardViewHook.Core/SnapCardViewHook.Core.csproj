@@ -55,6 +55,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bootstrap.cs" />
+    <Compile Include="Capture\CardCaptureAnchor.cs" />
+    <Compile Include="Capture\CardCaptureDispatcher.cs" />
+    <Compile Include="Capture\CardCaptureForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Capture\CardCaptureGate.cs" />
+    <Compile Include="Capture\CardCaptureOptions.cs" />
+    <Compile Include="Capture\CardImageCapture.cs" />
+    <Compile Include="Capture\CardVideoCapture.cs" />
+    <Compile Include="Capture\CardVideoCaptureForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Capture\CardVideoOptions.cs" />
+    <Compile Include="Capture\CaptureAlphaReconstruction.cs" />
+    <Compile Include="Capture\CaptureGeometry.cs" />
+    <Compile Include="Capture\CapturePngWriter.cs" />
+    <Compile Include="Capture\CaptureStateScope.cs" />
+    <Compile Include="Capture\FfmpegProResWriter.cs" />
+    <Compile Include="Capture\UnityCardCapture.cs" />
     <Compile Include="Data\SnapCardDefList.cs" />
     <Compile Include="Forms\CardCatalogForm.cs">
       <SubType>Form</SubType>
@@ -85,6 +104,11 @@
     <Compile Include="Wrappers\MonoObjectWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\IL2CppApi.Runtime\IL2CppApi.Runtime.csproj">
+      <Project>{167DE995-2A92-473A-A247-F218A7945CB4}</Project>
+      <Name>IL2CppApi.Runtime</Name>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\IL2CppApi\IL2CppApi.vcxproj">
       <Project>{357e558c-e606-4c5b-b7f1-a730c39d0b06}</Project>
       <Name>IL2CppApi</Name>

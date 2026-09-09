@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Launcher
+namespace SnapCardViewHook.Launcher
 {
     internal class Program
     {

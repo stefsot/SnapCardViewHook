@@ -11,9 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SnapCardViewHook.Core", "Sn
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NetInjector", "NetInjector\NetInjector.vcxproj", "{418A8BE0-77F2-4F0D-9F7D-CF3EE22DDD0E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher", "Launcher\Launcher.csproj", "{17555ADB-10AF-4FA6-9795-3B7DB23329C5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SnapCardViewHook.Launcher", "SnapCardViewHook.Launcher\SnapCardViewHook.Launcher.csproj", "{17555ADB-10AF-4FA6-9795-3B7DB23329C5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MinHook", "MinHook\MinHook.vcxproj", "{C81FA2B7-25C6-4EBB-A28A-F4F040E3B210}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IL2CppApi.Runtime", "IL2CppApi.Runtime\IL2CppApi.Runtime.csproj", "{167DE995-2A92-473A-A247-F218A7945CB4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +27,18 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Debug|x64.Build.0 = Debug|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Debug|x86.Build.0 = Debug|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Release|x64.ActiveCfg = Release|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Release|x64.Build.0 = Release|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Release|x86.ActiveCfg = Release|Any CPU
+		{167DE995-2A92-473A-A247-F218A7945CB4}.Release|x86.Build.0 = Release|Any CPU
 		{874113C4-ACB1-4AAD-9751-2AE3D6FC3AA8}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{874113C4-ACB1-4AAD-9751-2AE3D6FC3AA8}.Debug|Any CPU.Build.0 = Debug|x64
 		{874113C4-ACB1-4AAD-9751-2AE3D6FC3AA8}.Debug|x64.ActiveCfg = Debug|x64

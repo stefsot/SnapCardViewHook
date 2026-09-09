@@ -1,5 +1,6 @@
 ﻿using IL2CppApi.Wrappers;
 using SnapCardViewHook.Core.Data;
+using SnapCardViewHook.Core.Capture;
 using SnapCardViewHook.Core.Helpers;
 using SnapCardViewHook.Core.IL2Cpp;
 using SnapCardViewHook.Core.Wrappers;
@@ -366,6 +367,16 @@ namespace SnapCardViewHook.Core.Forms
         #endregion
 
         private CardCatalogForm _cardCatalogForm;
+        private CardCaptureForm _cardCaptureForm;
+
+        private void captureCardButton_Click(object sender, EventArgs e)
+        {
+            if (_cardCaptureForm == null || _cardCaptureForm.IsDisposed)
+                _cardCaptureForm = new CardCaptureForm();
+            if (!_cardCaptureForm.Visible)
+                _cardCaptureForm.Show(this);
+            _cardCaptureForm.BringToFront();
+        }
 
         private void showCatalogButton_Click(object sender, EventArgs e)
         {
