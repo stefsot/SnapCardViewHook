@@ -25,7 +25,8 @@ namespace SnapCardViewHook.Core.Capture
         private CardCaptureOptions _options;
         private CardCaptureAnchor _anchor;
         private IntPtr _mainRenderer, _captureCamera, _target, _readTarget, _pixels, _request;
-        private IntPtr[] _unrelatedRenderers, _unrelatedCanvases, _terrains, _suppressedFeatures, _matteFeatures;
+        private IntPtr _selectedDetails, _selectedEntity;
+        private IntPtr[] _unrelatedRenderers, _canvasSuppressionRoots, _terrains, _suppressedFeatures, _matteFeatures;
         private (IntPtr Key, IntPtr Texture)[] _cameraInputs;
         private CaptureRect _readRect;
         private int _rendererCount, _pixelByteCount;
@@ -202,9 +203,13 @@ namespace SnapCardViewHook.Core.Capture
                 Il2CppArgument.Value(false), Il2CppArgument.Value(false)); // RGBA32; no mip chain; sRGB.
         }
 
-        public CapturedCardPixels Capture(CancellationToken cancellation)
+        public CapturedCardPixels Capture(CancellationToken cancellation, CapturedCardPixels reusable = null)
         {
             if (_resources == null) throw new InvalidOperationException("Prepare card capture before capturing a frame.");
+            if (reusable != null && (reusable.Width != _options.Width || reusable.Height != _options.Height ||
+                reusable.Rgba?.Length != _pixelByteCount || (_options.TransparentBackground &&
+                (reusable.MatteBlackRgba?.Length != _pixelByteCount || reusable.MatteWhiteRgba?.Length != _pixelByteCount))))
+                throw new ArgumentException("Reusable frame buffers must match the capture dimensions.", nameof(reusable));
             cancellation.ThrowIfCancellationRequested();
             if (GetReference(_camera, IntPtr.Zero, "current") != IntPtr.Zero)
                 throw new InvalidOperationException("Card capture must be requested outside the camera rendering loop.");
@@ -226,13 +231,13 @@ namespace SnapCardViewHook.Core.Capture
                 ResetCameraInputs(state);
                 cancellation.ThrowIfCancellationRequested();
                 
-                result = new CapturedCardPixels
-                {
-                    Rgba = RenderPixels(new CaptureColor(1), cancellation),
-                    Width = _options.Width, Height = _options.Height, RendererCount = _rendererCount,
-                    LinearColorSpace = _linearColorSpace,
-                    SourceCamera = _sourceCameraName
-                };
+                result = reusable ?? new CapturedCardPixels();
+                result.Rgba = RenderPixels(new CaptureColor(1), cancellation, result.Rgba);
+                result.Width = _options.Width;
+                result.Height = _options.Height;
+                result.RendererCount = _rendererCount;
+                result.LinearColorSpace = _linearColorSpace;
+                result.SourceCamera = _sourceCameraName;
                
                 if (!_anchor.Initialized && !HasVisiblePixels(result.Rgba))
                     throw new InvalidOperationException("The offscreen target is blank. No image was saved. Check the active card and renderer compatibility.");
@@ -243,13 +248,29 @@ namespace SnapCardViewHook.Core.Capture
                    
                     SuppressFeatures(_matteFeatures, matteState);
                     ResetCameraInputs(matteState);
-                    result.MatteBlackRgba = RenderPixels(new CaptureColor(1), cancellation);
+                    result.MatteBlackRgba = RenderPixels(new CaptureColor(1), cancellation, result.MatteBlackRgba);
                     ResetCameraInputs(matteState);
-                    result.MatteWhiteRgba = RenderPixels(new CaptureColor(1, 1, 1, 1), cancellation);
+                    result.MatteWhiteRgba = RenderPixels(new CaptureColor(1, 1, 1, 1), cancellation, result.MatteWhiteRgba);
                 }
+                else { result.MatteBlackRgba = null; result.MatteWhiteRgba = null; }
             }
             _anchor.Initialized = true;
             return result;
+        }
+
+        internal bool IsSelectedCardCurrent(bool checkReadiness = true)
+        {
+            if (_resources == null || !Alive(_selectedDetails) ||
+                !Get<bool>(_behaviour, _selectedDetails, "isActiveAndEnabled") ||
+                !Get<bool>(_details, _selectedDetails, "IsVisible") ||
+                GetReference(_details, _selectedDetails, "CurrentEntityView") != _selectedEntity)
+                return false;
+            if (checkReadiness)
+            {
+                EnsureReady(_anchor.Card);
+                return FieldReference(_anchor.Card, _cardRenderer, "_CardRenderer") == _mainRenderer;
+            }
+            return true;
         }
 
         public void Dispose()
@@ -281,7 +302,7 @@ namespace SnapCardViewHook.Core.Capture
             return fallback.Corners().ToArray();
         }
 
-        private byte[] RenderPixels(CaptureColor background, CancellationToken cancellation)
+        private byte[] RenderPixels(CaptureColor background, CancellationToken cancellation, byte[] destination = null)
         {
             cancellation.ThrowIfCancellationRequested();
             Set(_camera, _captureCamera, "backgroundColor", "UnityEngine.Color", background);
@@ -302,7 +323,10 @@ namespace SnapCardViewHook.Core.Capture
                 Il2CppArgument.Value(_readRect), Il2CppArgument.Value(0),
                 Il2CppArgument.Value(0), Il2CppArgument.Value(false));
             
-            return _runtime.InvokeByteArray(_runtime.Method(_texture2D, "GetRawTextureData", false), _pixels, _pixelByteCount);
+            var read = _runtime.Method(_texture2D, "GetRawTextureData", false);
+            if (destination == null) return _runtime.InvokeByteArray(read, _pixels, _pixelByteCount);
+            _runtime.InvokeByteArrayInto(read, _pixels, destination);
+            return destination;
         }
 
         private IntPtr FindSelectedCard()
@@ -317,6 +341,8 @@ namespace SnapCardViewHook.Core.Capture
             var entity = GetReference(_details, candidates[0], "CurrentEntityView");
             var card = Alive(entity) ? ComponentOf(entity, _cardView) : IntPtr.Zero;
             if (!Alive(card)) throw new InvalidOperationException("The selected details entity is not a CardView (it may be a location).");
+            _selectedDetails = candidates[0];
+            _selectedEntity = entity;
             return card;
         }
 
@@ -507,8 +533,7 @@ namespace SnapCardViewHook.Core.Capture
             var allowedCanvases = new HashSet<IntPtr>(roots.SelectMany(r => Descendants(r, _canvas)));
             foreach (var excluded in exclusions)
                 foreach (var canvas in Descendants(excluded, _canvas)) allowedCanvases.Remove(canvas);
-            _unrelatedCanvases = FindObjects(_canvas).Where(c => Alive(c) &&
-                (!allowedCanvases.Contains(c) || Get<int>(_canvas, c, "renderMode") != 2)).ToArray(); // WorldSpace only.
+            _canvasSuppressionRoots = FindCanvasSuppressionRoots(allowedCanvases);
             var terrainType = _runtime.Class("UnityEngine.TerrainModule.dll", "UnityEngine", "Terrain", true);
             _terrains = terrainType == null ? Array.Empty<IntPtr>() : FindObjects(terrainType);
             _suppressedFeatures = features.Where(f => Alive(f) && !_permittedFeatures.Any(t => _runtime.IsInstance(f, t))).ToArray();
@@ -532,9 +557,32 @@ namespace SnapCardViewHook.Core.Capture
             }
         }
 
+        private IntPtr[] FindCanvasSuppressionRoots(HashSet<IntPtr> allowedCanvases)
+        {
+            var candidates = FindObjects(_canvas).Where(c => ShouldSuppressCanvas(c, allowedCanvases)).ToArray();
+            var roots = new HashSet<IntPtr>(candidates);
+            // Disabling a parent canvas also hides nested canvases; do not toggle those separately.
+            foreach (var canvas in candidates)
+            {
+                if (!roots.Contains(canvas)) continue;
+                foreach (var child in Descendants(GameOf(canvas), _canvas))
+                    if (child != canvas) roots.Remove(child);
+            }
+            return roots.ToArray();
+        }
+
+        private bool ShouldSuppressCanvas(IntPtr canvas, HashSet<IntPtr> allowedCanvases)
+        {
+            if (!Alive(canvas)) return false;
+            var root = GetReference(_canvas, canvas, "rootCanvas");
+            var renderMode = Get<int>(_canvas, Alive(root) ? root : canvas, "renderMode");
+            // URP excludes screen-space overlays from RenderTexture targets; leave their hierarchies untouched.
+            return renderMode != 0 && (renderMode != 2 || !allowedCanvases.Contains(canvas));
+        }
+
         private void SuppressCanvases(CaptureStateScope state)
         {
-            foreach (var canvas in _unrelatedCanvases)
+            foreach (var canvas in _canvasSuppressionRoots)
             {
                 if (!Alive(canvas) || !Get<bool>(_behaviour, canvas, "enabled")) continue;
                 var captured = canvas;

@@ -17,9 +17,7 @@ namespace SnapCardViewHook.Core.Capture
         private readonly Label _status = new Label { AutoSize = false };
         private readonly Button _capture = new Button { Text = "Capture PNG..." };
         private readonly Button _cancel = new Button { Text = "Cancel", Enabled = false };
-        private readonly Button _video = new Button { Text = "Record MOV..." };
         private readonly Button _open = new Button { Text = "Open PNG", Enabled = false };
-        private CardVideoCaptureForm _videoForm;
         private CancellationTokenSource _cancellation;
         private string _savedPath;
 
@@ -44,12 +42,10 @@ namespace SnapCardViewHook.Core.Capture
             Add(_status, 16, 205, 478, 66);
             Add(_capture, 16, 282, 135, 28);
             Add(_cancel, 165, 282, 90, 28);
-            Add(_video, 261, 282, 102, 28);
             Add(_open, 369, 282, 125, 28);
             _status.Text = "Default: opaque black background. Transparency uses three isolated renders; additive glow is approximated for PNG.";
             _capture.Click += CaptureClicked;
             _cancel.Click += (sender, args) => _cancellation?.Cancel();
-            _video.Click += VideoClicked;
             _open.Click += OpenClicked;
             FormClosing += (sender, args) => _cancellation?.Cancel();
         }
@@ -59,6 +55,12 @@ namespace SnapCardViewHook.Core.Capture
             control.SetBounds(x, y, width, height);
             Controls.Add(control);
         }
+
+        internal CardCaptureOptions GetFrameOptions() => new CardCaptureOptions
+        {
+            Width = (int)_width.Value, Height = (int)_height.Value, PaddingPercent = (float)_padding.Value,
+            TransparentBackground = _transparent.Checked, IncludeShadow = _shadow.Checked
+        };
 
         private async void CaptureClicked(object sender, EventArgs args)
         {
@@ -72,11 +74,8 @@ namespace SnapCardViewHook.Core.Capture
             })
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
-                var options = new CardCaptureOptions
-                {
-                    Width = (int)_width.Value, Height = (int)_height.Value, PaddingPercent = (float)_padding.Value,
-                    TransparentBackground = _transparent.Checked, IncludeShadow = _shadow.Checked, OutputPath = dialog.FileName
-                };
+                var options = GetFrameOptions();
+                options.OutputPath = dialog.FileName;
                 using (var cancellation = new CancellationTokenSource())
                 {
                     _cancellation = cancellation;
@@ -113,22 +112,10 @@ namespace SnapCardViewHook.Core.Capture
 
         private void SetWorking(bool working)
         {
-            _capture.Enabled = !working; _cancel.Enabled = working; _video.Enabled = !working;
+            _capture.Enabled = !working; _cancel.Enabled = working;
             _width.Enabled = !working; _height.Enabled = !working; _padding.Enabled = !working;
             _transparent.Enabled = !working; _shadow.Enabled = !working;
             _open.Enabled = !working && _savedPath != null;
-        }
-
-        private void VideoClicked(object sender, EventArgs args)
-        {
-            if (_videoForm == null || _videoForm.IsDisposed)
-                _videoForm = new CardVideoCaptureForm(new CardCaptureOptions
-                {
-                    Width = (int)_width.Value, Height = (int)_height.Value, PaddingPercent = (float)_padding.Value,
-                    TransparentBackground = _transparent.Checked, IncludeShadow = _shadow.Checked
-                });
-            if (!_videoForm.Visible) _videoForm.Show(this);
-            _videoForm.BringToFront();
         }
 
         internal static void ShowCaptureError(IWin32Window owner, Exception error, string title = "Card capture failed")

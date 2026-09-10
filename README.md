@@ -68,7 +68,7 @@ Unity Smart String expressions are not evaluated in replacement text.
 | The selector does not open, reports missing game methods, or the game crashes after an update | The current MARVEL SNAP update may be incompatible. Check for a newer SnapCardViewHook release. |
 | The game crashes after entering a custom variant | Restart the game without the launcher and use a known variant ID. Keep **Ensure variant matches card** enabled unless you know the selected combination is valid. |
 
-Injector diagnostics are written to `%APPDATA%\Snoop\SnoopLog.txt`.
+Injector diagnostics are written to `%APPDATA%\SnapCardViewHook\Log.txt`.
 
 ## Building from source
 

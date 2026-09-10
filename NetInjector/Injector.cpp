@@ -92,14 +92,14 @@ void Injector::Launch(System::IntPtr windowHandle, InjectorData^ injectorData)
 void Injector::LogMessage(System::String^ message, bool append)
 {
 	System::String^ applicationDataPath = System::Environment::GetFolderPath(System::Environment::SpecialFolder::ApplicationData);
-	applicationDataPath += "\\Snoop";
+	applicationDataPath += "\\SnapCardViewHook";
 
 	if (!System::IO::Directory::Exists(applicationDataPath))
 	{
 		System::IO::Directory::CreateDirectory(applicationDataPath);
 	}
 
-	System::String^ pathname = applicationDataPath + "\\SnoopLog.txt";
+	System::String^ pathname = applicationDataPath + "\\Log.txt";
 
 	if (!append)
 	{
@@ -145,6 +145,8 @@ LRESULT MessageHookProc(int nCode, WPARAM wparam, LPARAM lparam)
 			}
 			catch (System::Exception^ exception)
 			{
+				Injector::LogMessage(exception->Message, true);
+				
 				const auto errorMessage = System::String::Format(
 					"SnapCardViewHook could not load the following file:\n\n{0}\n\n"
 					"Windows may be blocking files downloaded from the Internet. Close SNAP, "

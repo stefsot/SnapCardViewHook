@@ -10,7 +10,7 @@ namespace SnapCardViewHook.Core.Capture
     internal sealed class CardVideoCaptureForm : Form
     {
         private readonly NumericUpDown _width = new NumericUpDown { Minimum = 64, Maximum = 4096, Value = 800, Increment = 64 };
-        private readonly NumericUpDown _height = new NumericUpDown { Minimum = 64, Maximum = 4096, Value = 800, Increment = 64 };
+        private readonly NumericUpDown _height = new NumericUpDown { Minimum = 64, Maximum = 4096, Value = 1200, Increment = 64 };
         private readonly NumericUpDown _padding = new NumericUpDown { Minimum = 0, Maximum = 100, Value = 0 };
         private readonly NumericUpDown _fps = new NumericUpDown { Minimum = 1, Maximum = 60, Value = 30 };
         private readonly NumericUpDown _duration = new NumericUpDown { Minimum = 1, Maximum = 600, Value = 5 };
@@ -24,6 +24,8 @@ namespace SnapCardViewHook.Core.Capture
         private readonly Button _record = new Button { Text = "Record MOV..." };
         private readonly Button _stopButton = new Button { Text = "Stop and encode", Enabled = false };
         private readonly Button _open = new Button { Text = "Open MOV", Enabled = false };
+        private readonly Button _previewButton = new Button { Text = "Live preview..." };
+        private CardLivePreviewForm _preview;
         private readonly Label _status = new Label { AutoSize = false };
         private CancellationTokenSource _stop;
         private bool _closeAfterStop;
@@ -77,6 +79,7 @@ namespace SnapCardViewHook.Core.Capture
             Add(_status, 16, 429, 558, 76);
             Add(_record, 16, 518, 135, 28);
             Add(_stopButton, 165, 518, 135, 28);
+            Add(_previewButton, 314, 518, 125, 28);
             Add(_open, 449, 518, 125, 28);
             _status.Text = "Ready";
             _width.ValueChanged += (sender, args) => UpdateMemoryEstimate();
@@ -90,6 +93,16 @@ namespace SnapCardViewHook.Core.Capture
             _record.Click += RecordClicked;
             _stopButton.Click += (sender, args) => RequestStop();
             _open.Click += OpenClicked;
+            _previewButton.Click += (sender, args) =>
+            {
+                if (_preview != null && !_preview.IsDisposed) { _preview.Activate(); return; }
+                _preview = new CardLivePreviewForm(new CardCaptureOptions
+                {
+                    Width = (int)_width.Value, Height = (int)_height.Value, PaddingPercent = (float)_padding.Value,
+                    IncludeShadow = _shadow.Checked, TransparentBackground = true
+                }, (int)_fps.Value);
+                _preview.Show(this);
+            };
             FormClosing += (sender, args) =>
             {
                 if (_stop == null) return;

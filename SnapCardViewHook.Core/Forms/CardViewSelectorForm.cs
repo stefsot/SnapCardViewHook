@@ -368,14 +368,29 @@ namespace SnapCardViewHook.Core.Forms
 
         private CardCatalogForm _cardCatalogForm;
         private CardCaptureForm _cardCaptureForm;
+        private CardVideoCaptureForm _cardVideoCaptureForm;
 
-        private void captureCardButton_Click(object sender, EventArgs e)
+        private void capturePngMenuItem_Click(object sender, EventArgs e)
         {
             if (_cardCaptureForm == null || _cardCaptureForm.IsDisposed)
                 _cardCaptureForm = new CardCaptureForm();
             if (!_cardCaptureForm.Visible)
                 _cardCaptureForm.Show(this);
             _cardCaptureForm.BringToFront();
+        }
+
+        private void captureVideoMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_cardVideoCaptureForm == null || _cardVideoCaptureForm.IsDisposed)
+            {
+                var frames = _cardCaptureForm != null && !_cardCaptureForm.IsDisposed
+                    ? _cardCaptureForm.GetFrameOptions()
+                    : new CardCaptureOptions { Width = 800, Height = 1200, PaddingPercent = 0 };
+                _cardVideoCaptureForm = new CardVideoCaptureForm(frames);
+            }
+            if (!_cardVideoCaptureForm.Visible)
+                _cardVideoCaptureForm.Show(this);
+            _cardVideoCaptureForm.BringToFront();
         }
 
         private void showCatalogButton_Click(object sender, EventArgs e)

@@ -17,6 +17,9 @@ namespace SnapCardViewHook.Core.Capture
             return new CardCaptureGate();
         }
 
+        public static CardCaptureGate TryEnter() =>
+            Interlocked.CompareExchange(ref _busy, 1, 0) == 0 ? new CardCaptureGate() : null;
+
         public void Dispose()
         {
             if (Interlocked.Exchange(ref _released, 1) == 0) Volatile.Write(ref _busy, 0);

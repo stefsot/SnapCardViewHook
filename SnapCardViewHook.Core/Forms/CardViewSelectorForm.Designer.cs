@@ -49,7 +49,10 @@
             this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
             this.boardBox = new System.Windows.Forms.ComboBox();
             this.showCatalogButton = new System.Windows.Forms.Button();
-            this.captureCardButton = new System.Windows.Forms.Button();
+            this.mainMenuStrip = new System.Windows.Forms.MenuStrip();
+            this.captureMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.capturePngMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.captureVideoMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.overrideFactionCheckBox = new System.Windows.Forms.CheckBox();
             this.factionBox = new System.Windows.Forms.ComboBox();
             this.changeCostCheckBox = new System.Windows.Forms.CheckBox();
@@ -58,13 +61,14 @@
             this.powerNumeric = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).BeginInit();
+            this.mainMenuStrip.SuspendLayout();
             this.SuspendLayout();
             // 
             // surfaceEffectBox
             // 
             this.surfaceEffectBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.surfaceEffectBox.FormattingEnabled = true;
-            this.surfaceEffectBox.Location = new System.Drawing.Point(34, 114);
+            this.surfaceEffectBox.Location = new System.Drawing.Point(34, 138);
             this.surfaceEffectBox.Name = "surfaceEffectBox";
             this.surfaceEffectBox.Size = new System.Drawing.Size(216, 21);
             this.surfaceEffectBox.TabIndex = 0;
@@ -73,7 +77,7 @@
             // 
             this.overrideSurfaceEffectCheckBox.AutoSize = true;
             this.overrideSurfaceEffectCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideSurfaceEffectCheckBox.Location = new System.Drawing.Point(34, 88);
+            this.overrideSurfaceEffectCheckBox.Location = new System.Drawing.Point(34, 112);
             this.overrideSurfaceEffectCheckBox.Name = "overrideSurfaceEffectCheckBox";
             this.overrideSurfaceEffectCheckBox.Size = new System.Drawing.Size(160, 20);
             this.overrideSurfaceEffectCheckBox.TabIndex = 1;
@@ -84,7 +88,7 @@
             // 
             this.overrideRevealEffectCheckBox.AutoSize = true;
             this.overrideRevealEffectCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideRevealEffectCheckBox.Location = new System.Drawing.Point(34, 163);
+            this.overrideRevealEffectCheckBox.Location = new System.Drawing.Point(34, 187);
             this.overrideRevealEffectCheckBox.Name = "overrideRevealEffectCheckBox";
             this.overrideRevealEffectCheckBox.Size = new System.Drawing.Size(154, 20);
             this.overrideRevealEffectCheckBox.TabIndex = 3;
@@ -95,7 +99,7 @@
             // 
             this.revealEffectBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.revealEffectBox.FormattingEnabled = true;
-            this.revealEffectBox.Location = new System.Drawing.Point(34, 189);
+            this.revealEffectBox.Location = new System.Drawing.Point(34, 213);
             this.revealEffectBox.Name = "revealEffectBox";
             this.revealEffectBox.Size = new System.Drawing.Size(216, 21);
             this.revealEffectBox.TabIndex = 2;
@@ -104,7 +108,7 @@
             // 
             this.overrideVariantCheckBox.AutoSize = true;
             this.overrideVariantCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideVariantCheckBox.Location = new System.Drawing.Point(34, 237);
+            this.overrideVariantCheckBox.Location = new System.Drawing.Point(34, 261);
             this.overrideVariantCheckBox.Name = "overrideVariantCheckBox";
             this.overrideVariantCheckBox.Size = new System.Drawing.Size(121, 20);
             this.overrideVariantCheckBox.TabIndex = 5;
@@ -116,7 +120,7 @@
             this.variantBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
             this.variantBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.variantBox.FormattingEnabled = true;
-            this.variantBox.Location = new System.Drawing.Point(34, 284);
+            this.variantBox.Location = new System.Drawing.Point(34, 308);
             this.variantBox.Name = "variantBox";
             this.variantBox.Size = new System.Drawing.Size(216, 21);
             this.variantBox.TabIndex = 4;
@@ -127,7 +131,7 @@
             this.ensureVariantMatchCheckbox.Checked = true;
             this.ensureVariantMatchCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.ensureVariantMatchCheckbox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ensureVariantMatchCheckbox.Location = new System.Drawing.Point(34, 258);
+            this.ensureVariantMatchCheckbox.Location = new System.Drawing.Point(34, 282);
             this.ensureVariantMatchCheckbox.Name = "ensureVariantMatchCheckbox";
             this.ensureVariantMatchCheckbox.Size = new System.Drawing.Size(195, 20);
             this.ensureVariantMatchCheckbox.TabIndex = 6;
@@ -140,7 +144,7 @@
             this.force3DCheckbox.Checked = true;
             this.force3DCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.force3DCheckbox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.force3DCheckbox.Location = new System.Drawing.Point(34, 549);
+            this.force3DCheckbox.Location = new System.Drawing.Point(34, 573);
             this.force3DCheckbox.Name = "force3DCheckbox";
             this.force3DCheckbox.Size = new System.Drawing.Size(111, 20);
             this.force3DCheckbox.TabIndex = 7;
@@ -151,7 +155,7 @@
             // 
             this.overrideBorderCheckBox.AutoSize = true;
             this.overrideBorderCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideBorderCheckBox.Location = new System.Drawing.Point(34, 342);
+            this.overrideBorderCheckBox.Location = new System.Drawing.Point(34, 366);
             this.overrideBorderCheckBox.Name = "overrideBorderCheckBox";
             this.overrideBorderCheckBox.Size = new System.Drawing.Size(121, 20);
             this.overrideBorderCheckBox.TabIndex = 9;
@@ -162,7 +166,7 @@
             // 
             this.borderBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.borderBox.FormattingEnabled = true;
-            this.borderBox.Location = new System.Drawing.Point(34, 368);
+            this.borderBox.Location = new System.Drawing.Point(34, 392);
             this.borderBox.Name = "borderBox";
             this.borderBox.Size = new System.Drawing.Size(216, 21);
             this.borderBox.TabIndex = 8;
@@ -171,7 +175,7 @@
             // 
             this.overrideCardCheckBox.AutoSize = true;
             this.overrideCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideCardCheckBox.Location = new System.Drawing.Point(34, 11);
+            this.overrideCardCheckBox.Location = new System.Drawing.Point(34, 35);
             this.overrideCardCheckBox.Name = "overrideCardCheckBox";
             this.overrideCardCheckBox.Size = new System.Drawing.Size(108, 20);
             this.overrideCardCheckBox.TabIndex = 11;
@@ -182,7 +186,7 @@
             // 
             this.cardBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cardBox.FormattingEnabled = true;
-            this.cardBox.Location = new System.Drawing.Point(34, 37);
+            this.cardBox.Location = new System.Drawing.Point(34, 61);
             this.cardBox.Name = "cardBox";
             this.cardBox.Size = new System.Drawing.Size(216, 21);
             this.cardBox.TabIndex = 10;
@@ -191,7 +195,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.ForeColor = System.Drawing.Color.Red;
-            this.label1.Location = new System.Drawing.Point(16, 308);
+            this.label1.Location = new System.Drawing.Point(16, 332);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(261, 13);
             this.label1.TabIndex = 12;
@@ -201,7 +205,7 @@
             // 
             this.flipCardCheckBox.AutoSize = true;
             this.flipCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipCardCheckBox.Location = new System.Drawing.Point(151, 549);
+            this.flipCardCheckBox.Location = new System.Drawing.Point(151, 573);
             this.flipCardCheckBox.Name = "flipCardCheckBox";
             this.flipCardCheckBox.Size = new System.Drawing.Size(78, 20);
             this.flipCardCheckBox.TabIndex = 13;
@@ -213,7 +217,7 @@
             // 
             this.overrideCardBackCheckBox.AutoSize = true;
             this.overrideCardBackCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideCardBackCheckBox.Location = new System.Drawing.Point(34, 412);
+            this.overrideCardBackCheckBox.Location = new System.Drawing.Point(34, 436);
             this.overrideCardBackCheckBox.Name = "overrideCardBackCheckBox";
             this.overrideCardBackCheckBox.Size = new System.Drawing.Size(141, 20);
             this.overrideCardBackCheckBox.TabIndex = 15;
@@ -224,7 +228,7 @@
             // 
             this.cardBackBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cardBackBox.FormattingEnabled = true;
-            this.cardBackBox.Location = new System.Drawing.Point(34, 438);
+            this.cardBackBox.Location = new System.Drawing.Point(34, 462);
             this.cardBackBox.Name = "cardBackBox";
             this.cardBackBox.Size = new System.Drawing.Size(216, 21);
             this.cardBackBox.TabIndex = 14;
@@ -232,7 +236,7 @@
             // descriptionTextBox
             // 
             this.descriptionTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.descriptionTextBox.Location = new System.Drawing.Point(299, 114);
+            this.descriptionTextBox.Location = new System.Drawing.Point(299, 138);
             this.descriptionTextBox.Multiline = true;
             this.descriptionTextBox.Name = "descriptionTextBox";
             this.descriptionTextBox.Size = new System.Drawing.Size(216, 96);
@@ -244,7 +248,7 @@
             // 
             this.overrideDescriptionCheckBox.AutoSize = true;
             this.overrideDescriptionCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideDescriptionCheckBox.Location = new System.Drawing.Point(299, 88);
+            this.overrideDescriptionCheckBox.Location = new System.Drawing.Point(299, 112);
             this.overrideDescriptionCheckBox.Name = "overrideDescriptionCheckBox";
             this.overrideDescriptionCheckBox.Size = new System.Drawing.Size(131, 20);
             this.overrideDescriptionCheckBox.TabIndex = 17;
@@ -256,7 +260,7 @@
             // 
             this.overrideBoardCheckBox.AutoSize = true;
             this.overrideBoardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 237);
+            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 261);
             this.overrideBoardCheckBox.Name = "overrideBoardCheckBox";
             this.overrideBoardCheckBox.Size = new System.Drawing.Size(155, 20);
             this.overrideBoardCheckBox.TabIndex = 18;
@@ -267,14 +271,14 @@
             // 
             this.boardBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.boardBox.FormattingEnabled = true;
-            this.boardBox.Location = new System.Drawing.Point(299, 263);
+            this.boardBox.Location = new System.Drawing.Point(299, 287);
             this.boardBox.Name = "boardBox";
             this.boardBox.Size = new System.Drawing.Size(216, 21);
             this.boardBox.TabIndex = 19;
             // 
             // showCatalogButton
             // 
-            this.showCatalogButton.Location = new System.Drawing.Point(403, 546);
+            this.showCatalogButton.Location = new System.Drawing.Point(403, 570);
             this.showCatalogButton.Name = "showCatalogButton";
             this.showCatalogButton.Size = new System.Drawing.Size(127, 23);
             this.showCatalogButton.TabIndex = 20;
@@ -282,21 +286,40 @@
             this.showCatalogButton.UseVisualStyleBackColor = true;
             this.showCatalogButton.Click += new System.EventHandler(this.showCatalogButton_Click);
             //
-            // captureCardButton
+            // mainMenuStrip
             //
-            this.captureCardButton.Location = new System.Drawing.Point(249, 546);
-            this.captureCardButton.Name = "captureCardButton";
-            this.captureCardButton.Size = new System.Drawing.Size(145, 23);
-            this.captureCardButton.TabIndex = 27;
-            this.captureCardButton.Text = "Capture card";
-            this.captureCardButton.UseVisualStyleBackColor = true;
-            this.captureCardButton.Click += new System.EventHandler(this.captureCardButton_Click);
+            this.mainMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.captureMenuItem});
+            this.mainMenuStrip.Location = new System.Drawing.Point(0, 0);
+            this.mainMenuStrip.Name = "mainMenuStrip";
+            this.mainMenuStrip.Size = new System.Drawing.Size(542, 24);
+            this.mainMenuStrip.TabIndex = 27;
+            //
+            // captureMenuItem
+            //
+            this.captureMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.capturePngMenuItem,
+            this.captureVideoMenuItem});
+            this.captureMenuItem.Name = "captureMenuItem";
+            this.captureMenuItem.Text = "&Capture";
+            //
+            // capturePngMenuItem
+            //
+            this.capturePngMenuItem.Name = "capturePngMenuItem";
+            this.capturePngMenuItem.Text = "&PNG capture...";
+            this.capturePngMenuItem.Click += new System.EventHandler(this.capturePngMenuItem_Click);
+            //
+            // captureVideoMenuItem
+            //
+            this.captureVideoMenuItem.Name = "captureVideoMenuItem";
+            this.captureVideoMenuItem.Text = "&Video capture...";
+            this.captureVideoMenuItem.Click += new System.EventHandler(this.captureVideoMenuItem_Click);
             // 
             // overrideFactionCheckBox
             // 
             this.overrideFactionCheckBox.AutoSize = true;
             this.overrideFactionCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideFactionCheckBox.Location = new System.Drawing.Point(34, 480);
+            this.overrideFactionCheckBox.Location = new System.Drawing.Point(34, 504);
             this.overrideFactionCheckBox.Name = "overrideFactionCheckBox";
             this.overrideFactionCheckBox.Size = new System.Drawing.Size(120, 20);
             this.overrideFactionCheckBox.TabIndex = 22;
@@ -307,7 +330,7 @@
             // 
             this.factionBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.factionBox.FormattingEnabled = true;
-            this.factionBox.Location = new System.Drawing.Point(34, 506);
+            this.factionBox.Location = new System.Drawing.Point(34, 530);
             this.factionBox.Name = "factionBox";
             this.factionBox.Size = new System.Drawing.Size(216, 21);
             this.factionBox.TabIndex = 21;
@@ -316,7 +339,7 @@
             // 
             this.changeCostCheckBox.AutoSize = true;
             this.changeCostCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.changeCostCheckBox.Location = new System.Drawing.Point(299, 11);
+            this.changeCostCheckBox.Location = new System.Drawing.Point(299, 35);
             this.changeCostCheckBox.Name = "changeCostCheckBox";
             this.changeCostCheckBox.Size = new System.Drawing.Size(96, 20);
             this.changeCostCheckBox.TabIndex = 23;
@@ -327,7 +350,7 @@
             // 
             this.changePowerCheckBox.AutoSize = true;
             this.changePowerCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.changePowerCheckBox.Location = new System.Drawing.Point(417, 11);
+            this.changePowerCheckBox.Location = new System.Drawing.Point(417, 35);
             this.changePowerCheckBox.Name = "changePowerCheckBox";
             this.changePowerCheckBox.Size = new System.Drawing.Size(107, 20);
             this.changePowerCheckBox.TabIndex = 24;
@@ -336,7 +359,7 @@
             // 
             // costNumeric
             // 
-            this.costNumeric.Location = new System.Drawing.Point(299, 38);
+            this.costNumeric.Location = new System.Drawing.Point(299, 62);
             this.costNumeric.Maximum = new decimal(new int[] {
             99999,
             0,
@@ -353,7 +376,7 @@
             // 
             // powerNumeric
             // 
-            this.powerNumeric.Location = new System.Drawing.Point(414, 38);
+            this.powerNumeric.Location = new System.Drawing.Point(414, 62);
             this.powerNumeric.Maximum = new decimal(new int[] {
             99999,
             0,
@@ -372,7 +395,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(542, 582);
+            this.ClientSize = new System.Drawing.Size(542, 606);
             this.Controls.Add(this.powerNumeric);
             this.Controls.Add(this.costNumeric);
             this.Controls.Add(this.changePowerCheckBox);
@@ -380,7 +403,7 @@
             this.Controls.Add(this.overrideFactionCheckBox);
             this.Controls.Add(this.factionBox);
             this.Controls.Add(this.showCatalogButton);
-            this.Controls.Add(this.captureCardButton);
+            this.Controls.Add(this.mainMenuStrip);
             this.Controls.Add(this.boardBox);
             this.Controls.Add(this.overrideBoardCheckBox);
             this.Controls.Add(this.overrideDescriptionCheckBox);
@@ -402,6 +425,7 @@
             this.Controls.Add(this.overrideSurfaceEffectCheckBox);
             this.Controls.Add(this.surfaceEffectBox);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.MainMenuStrip = this.mainMenuStrip;
             this.MaximizeBox = false;
             this.Name = "CardViewSelectorForm";
             this.ShowIcon = false;
@@ -410,6 +434,8 @@
             this.Load += new System.EventHandler(this.CardViewSelectorForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).EndInit();
+            this.mainMenuStrip.ResumeLayout(false);
+            this.mainMenuStrip.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -438,7 +464,10 @@
         private System.Windows.Forms.CheckBox overrideBoardCheckBox;
         private System.Windows.Forms.ComboBox boardBox;
         private System.Windows.Forms.Button showCatalogButton;
-        private System.Windows.Forms.Button captureCardButton;
+        private System.Windows.Forms.MenuStrip mainMenuStrip;
+        private System.Windows.Forms.ToolStripMenuItem captureMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem capturePngMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem captureVideoMenuItem;
         private System.Windows.Forms.CheckBox overrideFactionCheckBox;
         private System.Windows.Forms.ComboBox factionBox;
         private System.Windows.Forms.CheckBox changeCostCheckBox;

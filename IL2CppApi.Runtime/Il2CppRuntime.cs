@@ -86,6 +86,21 @@ namespace IL2CppApi.Runtime
             }
         }
 
+        public void InvokeByteArrayInto(IL2CppMethodInfoWrapper method, IntPtr instance, byte[] destination, params Il2CppArgument[] args)
+        {
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+            var handle = IntPtr.Zero;
+            try
+            {
+                var array = InvokeCore(method, instance, args, temporaryResult: true, out handle);
+                CopyByteArray(array, destination);
+            }
+            finally
+            {
+                if (handle != IntPtr.Zero) _api.FreeHandle(handle);
+            }
+        }
+
         private IntPtr InvokeCore(IL2CppMethodInfoWrapper method, IntPtr instance, Il2CppArgument[] args,
             bool temporaryResult, out IntPtr temporaryHandle)
         {
@@ -253,15 +268,22 @@ namespace IL2CppApi.Runtime
         public byte[] ByteArray(IntPtr array, int expectedLength)
         {
             CheckThread();
-            if (array == IntPtr.Zero || _api.ElementSize(_api.ObjectClass(array)) != 1 ||
-                _api.ArrayLength(array) != (uint)expectedLength)
-                throw new InvalidOperationException("IL2CPP returned an unexpected byte array size.");
             var result = new byte[expectedLength];
+            CopyByteArray(array, result);
+            return result;
+        }
+
+        public void CopyByteArray(IntPtr array, byte[] destination)
+        {
+            CheckThread();
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+            if (array == IntPtr.Zero || _api.ElementSize(_api.ObjectClass(array)) != 1 ||
+                _api.ArrayLength(array) != (uint)destination.Length)
+                throw new InvalidOperationException("IL2CPP returned an unexpected byte array size.");
             var handle = _api.NewHandle(array, true);
             if (handle == IntPtr.Zero) throw new OutOfMemoryException("Could not pin an IL2CPP array.");
-            try { Marshal.Copy(IntPtr.Add(array, _arrayDataOffset), result, 0, result.Length); }
+            try { Marshal.Copy(IntPtr.Add(array, _arrayDataOffset), destination, 0, destination.Length); }
             finally { _api.FreeHandle(handle); }
-            return result;
         }
 
         private void PinArray(IntPtr array)
