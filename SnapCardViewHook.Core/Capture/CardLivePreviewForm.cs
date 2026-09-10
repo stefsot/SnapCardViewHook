@@ -12,8 +12,16 @@ namespace SnapCardViewHook.Core.Capture
         {
             BackColor = Color.FromArgb(48, 48, 48), SizeMode = PictureBoxSizeMode.Normal
         };
+        private readonly Panel _viewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
+        private readonly CheckBox _transparent = new CheckBox
+        {
+            Text = "Transparent", AutoSize = true, Margin = new Padding(8, 8, 3, 3)
+        };
         private readonly System.Windows.Forms.Timer _timer = new System.Windows.Forms.Timer { Interval = 16 };
         private readonly CardLivePreview _preview;
+        private TransparentCardPreviewForm _overlay;
+        private Size _coloredClientSize;
+        private FormWindowState _coloredWindowState;
         private Bitmap _front, _back;
         private bool _converting;
 
@@ -26,21 +34,105 @@ namespace SnapCardViewHook.Core.Capture
             StartPosition = FormStartPosition.CenterParent;
             _preview = new CardLivePreview(options, fps);
             _picture.Size = new Size(options.Width, options.Height);
-            var viewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = _picture.BackColor };
-            viewport.Controls.Add(_picture);
+            _viewport.BackColor = _picture.BackColor;
+            _viewport.Controls.Add(_picture);
             var toolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40 };
             var background = new Button { Text = "Background...", AutoSize = true };
             background.Click += (sender, args) =>
             {
                 using (var dialog = new ColorDialog { Color = _picture.BackColor, FullOpen = true })
                     if (dialog.ShowDialog(this) == DialogResult.OK)
-                        viewport.BackColor = _picture.BackColor = dialog.Color;
+                        _viewport.BackColor = _picture.BackColor = dialog.Color;
             };
             toolbar.Controls.Add(background);
-            Controls.Add(viewport);
+            toolbar.Controls.Add(_transparent);
+            _transparent.CheckedChanged += TransparencyChanged;
+            Controls.Add(_viewport);
             Controls.Add(toolbar);
             _timer.Tick += DisplayFrame;
             Shown += (sender, args) => { _preview.Start(); _timer.Start(); };
+        }
+
+        private void TransparencyChanged(object sender, EventArgs args)
+        {
+            if (!_transparent.Checked) { RestoreColoredPreview(); return; }
+            _coloredWindowState = WindowState;
+            WindowState = FormWindowState.Normal;
+            _coloredClientSize = ClientSize;
+            try
+            {
+                _overlay = new TransparentCardPreviewForm(_picture.Size);
+                _overlay.FormClosed += OverlayClosed;
+                _viewport.Visible = false;
+                MinimumSize = Size.Empty;
+                FormBorderStyle = FormBorderStyle.FixedSingle;
+                MaximizeBox = false;
+                ClientSize = new Size(Math.Max(320, _coloredClientSize.Width), 40);
+                PositionOverlay();
+                _overlay.SetFrame(_picture.Image as Bitmap);
+                _overlay.Show(this);
+            }
+            catch (Exception error)
+            {
+                _transparent.Checked = false;
+                MessageBox.Show(this, error.Message, "Transparent preview", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void RestoreColoredPreview()
+        {
+            CloseOverlay();
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
+            MinimumSize = new Size(320, 320);
+            ClientSize = _coloredClientSize;
+            _viewport.Visible = true;
+            WindowState = _coloredWindowState;
+        }
+
+        private void OverlayClosed(object sender, FormClosedEventArgs args)
+        {
+            _overlay = null;
+            if (args.CloseReason != CloseReason.FormOwnerClosing && !IsDisposed && !Disposing)
+                _transparent.Checked = false;
+        }
+
+        private void CloseOverlay()
+        {
+            var overlay = _overlay;
+            _overlay = null;
+            if (overlay == null) return;
+            overlay.FormClosed -= OverlayClosed;
+            overlay.Dispose();
+        }
+
+        private void PositionOverlay()
+        {
+            if (_overlay == null || WindowState == FormWindowState.Minimized) return;
+            _overlay.Location = new Point(PointToScreen(Point.Empty).X, Bottom);
+        }
+
+        protected override void OnLocationChanged(EventArgs args)
+        {
+            base.OnLocationChanged(args);
+            PositionOverlay();
+        }
+
+        protected override void OnSizeChanged(EventArgs args)
+        {
+            base.OnSizeChanged(args);
+            PositionOverlay();
+        }
+
+        private void ShowFrame(Bitmap bitmap)
+        {
+            _picture.Image = bitmap;
+            try { _overlay?.SetFrame(bitmap); }
+            catch (Exception error)
+            {
+                System.Diagnostics.Debug.WriteLine(error);
+                _transparent.Checked = false;
+            }
         }
 
         private async void DisplayFrame(object sender, EventArgs args)
@@ -48,7 +140,7 @@ namespace SnapCardViewHook.Core.Capture
             if (_converting) return;
             var pixels = _preview.TakeFrame();
             if (pixels == null) return;
-            if (pixels.Rgba == null) { _picture.Image = null; return; }
+            if (pixels.Rgba == null) { ShowFrame(null); return; }
             _converting = true;
             var bitmap = _back;
             _back = null;
@@ -60,7 +152,7 @@ namespace SnapCardViewHook.Core.Capture
                     WriteBitmap(pixels, bitmap);
                 });
                 if (IsDisposed || Disposing) return;
-                _picture.Image = bitmap;
+                ShowFrame(bitmap);
                 _back = _front;
                 _front = bitmap;
                 bitmap = null;
@@ -68,7 +160,7 @@ namespace SnapCardViewHook.Core.Capture
             catch (Exception error)
             {
                 System.Diagnostics.Debug.WriteLine(error);
-                if (!IsDisposed && !Disposing) _picture.Image = null;
+                if (!IsDisposed && !Disposing) ShowFrame(null);
             }
             finally
             {
@@ -96,6 +188,7 @@ namespace SnapCardViewHook.Core.Capture
                 _timer.Stop();
                 _timer.Dispose();
                 _preview.Dispose();
+                CloseOverlay();
                 _picture.Image = null;
                 _front?.Dispose(); _front = null;
                 _back?.Dispose(); _back = null;

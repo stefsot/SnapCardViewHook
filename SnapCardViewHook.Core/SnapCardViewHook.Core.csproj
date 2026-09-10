@@ -78,6 +78,9 @@
     <Compile Include="Capture\CapturePngWriter.cs" />
     <Compile Include="Capture\CaptureStateScope.cs" />
     <Compile Include="Capture\FfmpegProResWriter.cs" />
+    <Compile Include="Capture\TransparentCardPreviewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Capture\UnityCardCapture.cs" />
     <Compile Include="Data\SnapCardDefList.cs" />
     <Compile Include="Forms\CardCatalogForm.cs">
