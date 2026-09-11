@@ -18,28 +18,18 @@ namespace SnapCardViewHook.Core.Capture
             ApplyCore(color, matteBlack, matteWhite, linearColorSpace, cancellation);
         }
         
-        public static unsafe void ApplyPremultipliedVideo(byte[] color, byte[] matteBlack, byte[] matteWhite,
+        public static void ApplyPremultipliedVideo(byte[] color, byte[] matteBlack, byte[] matteWhite,
             bool linearColorSpace, CancellationToken cancellation)
         {
-            ValidateBuffers(color, matteBlack, matteWhite);
-            fixed (byte* rgba = color, black = matteBlack, white = matteWhite,
-                coverage = linearColorSpace ? LinearCoverage : GammaCoverage)
+            Apply(color, matteBlack, matteWhite, linearColorSpace, cancellation);
+            // Premultiply the reconstructed sRGB samples for video export, preserving PNG's alpha.
+            for (var i = 0; i < color.Length; i += 4)
             {
-                var i = 0;
-                for (; i <= color.Length - 16; i += 16)
-                {
-                    if ((i & 16383) == 0) cancellation.ThrowIfCancellationRequested();
-                    var alpha = PremultipliedAlpha4(rgba + i, black + i, white + i, coverage);
-                    rgba[i + 3] = (byte)alpha.X;
-                    rgba[i + 7] = (byte)alpha.Y;
-                    rgba[i + 11] = (byte)alpha.Z;
-                    rgba[i + 15] = (byte)alpha.W;
-                }
-                for (; i < color.Length; i += 4)
-                {
-                    if ((i & 16383) == 0) cancellation.ThrowIfCancellationRequested();
-                    rgba[i + 3] = PremultipliedAlpha(rgba + i, black + i, white + i, coverage);
-                }
+                if ((i & 16383) == 0) cancellation.ThrowIfCancellationRequested();
+                var alpha = color[i + 3];
+                color[i] = (byte)((color[i] * alpha + 127) / 255);
+                color[i + 1] = (byte)((color[i + 1] * alpha + 127) / 255);
+                color[i + 2] = (byte)((color[i + 2] * alpha + 127) / 255);
             }
             cancellation.ThrowIfCancellationRequested();
         }

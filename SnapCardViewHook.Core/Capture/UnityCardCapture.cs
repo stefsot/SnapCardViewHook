@@ -586,8 +586,8 @@ namespace SnapCardViewHook.Core.Capture
             {
                 if (!Alive(canvas) || !Get<bool>(_behaviour, canvas, "enabled")) continue;
                 var captured = canvas;
-                state.RestoreWith(() => { if (Alive(captured)) Set(_behaviour, captured, "enabled", "System.Boolean", true); });
-                Set(_behaviour, canvas, "enabled", "System.Boolean", false);
+                // state.RestoreWith(() => { if (Alive(captured)) Set(_behaviour, captured, "enabled", "System.Boolean", true); });
+                // Set(_behaviour, canvas, "enabled", "System.Boolean", false);
             }
         }
 
