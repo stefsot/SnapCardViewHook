@@ -1,5 +1,4 @@
 using System;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -9,8 +8,8 @@ namespace SnapCardViewHook.Core.Capture
     {
         private static readonly double[] LinearValues = CreateValues(true);
         private static readonly double[] GammaValues = CreateValues(false);
-        private static readonly byte[] LinearCoverage = CreateCoverage(LinearValues);
-        private static readonly byte[] GammaCoverage = CreateCoverage(GammaValues);
+        private static readonly LookupTables LinearLookup = new LookupTables(LinearValues, true);
+        private static readonly LookupTables GammaLookup = new LookupTables(GammaValues, false);
         
         public static void Apply(byte[] color, byte[] matteBlack, byte[] matteWhite,
             bool linearColorSpace, CancellationToken cancellation)
@@ -18,18 +17,20 @@ namespace SnapCardViewHook.Core.Capture
             ApplyCore(color, matteBlack, matteWhite, linearColorSpace, cancellation);
         }
         
-        public static void ApplyPremultipliedVideo(byte[] color, byte[] matteBlack, byte[] matteWhite,
+        public static unsafe void ApplyPremultipliedVideo(byte[] color, byte[] matteBlack, byte[] matteWhite,
             bool linearColorSpace, CancellationToken cancellation)
         {
-            Apply(color, matteBlack, matteWhite, linearColorSpace, cancellation);
-            // Premultiply the reconstructed sRGB samples for video export, preserving PNG's alpha.
-            for (var i = 0; i < color.Length; i += 4)
+            ValidateBuffers(color, matteBlack, matteWhite);
+            var lookup = linearColorSpace ? LinearLookup : GammaLookup;
+            fixed (byte* rgba = color, black = matteBlack, white = matteWhite,
+                coverage = lookup.Coverage, minimumAlpha = lookup.MinimumAlpha, premultiplied = lookup.Premultiplied)
             {
-                if ((i & 16383) == 0) cancellation.ThrowIfCancellationRequested();
-                var alpha = color[i + 3];
-                color[i] = (byte)((color[i] * alpha + 127) / 255);
-                color[i + 1] = (byte)((color[i + 1] * alpha + 127) / 255);
-                color[i + 2] = (byte)((color[i + 2] * alpha + 127) / 255);
+                for (var i = 0; i < color.Length; i += 4)
+                {
+                    if ((i & 16383) == 0) cancellation.ThrowIfCancellationRequested();
+                    *(uint*)(rgba + i) = PremultipliedPixel(rgba + i, black + i, white + i,
+                        coverage, minimumAlpha, premultiplied);
+                }
             }
             cancellation.ThrowIfCancellationRequested();
         }
@@ -43,58 +44,37 @@ namespace SnapCardViewHook.Core.Capture
             if (destination == IntPtr.Zero || Math.Abs((long)stride) < rowBytes ||
                 pixels.Rgba?.Length != length || pixels.MatteBlackRgba?.Length != length || pixels.MatteWhiteRgba?.Length != length)
                 throw new ArgumentException("Invalid preview buffers.", nameof(pixels));
+            var lookup = pixels.LinearColorSpace ? LinearLookup : GammaLookup;
             fixed (byte* color = pixels.Rgba, black = pixels.MatteBlackRgba, white = pixels.MatteWhiteRgba,
-                coverage = pixels.LinearColorSpace ? LinearCoverage : GammaCoverage)
+                coverage = lookup.Coverage, minimumAlpha = lookup.MinimumAlpha, premultiplied = lookup.Premultiplied)
             {
                 for (var y = 0; y < pixels.Height; y++)
                 {
                     var row = (byte*)destination + checked(y * stride);
                     var source = (pixels.Height - 1 - y) * rowBytes;
-                    var x = 0;
-                    for (; x <= rowBytes - 16; x += 16, source += 16)
+                    for (var x = 0; x < rowBytes; x += 4, source += 4)
                     {
-                        var alpha = PremultipliedAlpha4(color + source, black + source, white + source, coverage);
-                        WriteBgra(color + source, row + x, (byte)alpha.X);
-                        WriteBgra(color + source + 4, row + x + 4, (byte)alpha.Y);
-                        WriteBgra(color + source + 8, row + x + 8, (byte)alpha.Z);
-                        WriteBgra(color + source + 12, row + x + 12, (byte)alpha.W);
+                        var rgba = PremultipliedPixel(color + source, black + source, white + source,
+                            coverage, minimumAlpha, premultiplied);
+                        *(uint*)(row + x) = ((rgba & 0xFF) << 16) | (rgba & 0xFF00) |
+                            ((rgba >> 16) & 0xFF) | (rgba & 0xFF000000);
                     }
-                    for (; x < rowBytes; x += 4, source += 4)
-                        WriteBgra(color + source, row + x,
-                            PremultipliedAlpha(color + source, black + source, white + source, coverage));
                 }
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector4 PremultipliedAlpha4(byte* color, byte* black, byte* white, byte* coverage)
-        {
-            var r = new Vector4(coverage[(white[0] << 8) | black[0]], coverage[(white[4] << 8) | black[4]],
-                coverage[(white[8] << 8) | black[8]], coverage[(white[12] << 8) | black[12]]);
-            var g = new Vector4(coverage[(white[1] << 8) | black[1]], coverage[(white[5] << 8) | black[5]],
-                coverage[(white[9] << 8) | black[9]], coverage[(white[13] << 8) | black[13]]);
-            var b = new Vector4(coverage[(white[2] << 8) | black[2]], coverage[(white[6] << 8) | black[6]],
-                coverage[(white[10] << 8) | black[10]], coverage[(white[14] << 8) | black[14]]);
-            var peak = Vector4.Max(new Vector4(color[0], color[4], color[8], color[12]),
-                Vector4.Max(new Vector4(color[1], color[5], color[9], color[13]),
-                    new Vector4(color[2], color[6], color[10], color[14])));
-            return Vector4.Max(Vector4.Min(r, Vector4.Min(g, b)), peak);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe byte PremultipliedAlpha(byte* color, byte* black, byte* white, byte* coverage)
+        private static unsafe uint PremultipliedPixel(byte* color, byte* black, byte* white,
+            byte* coverage, byte* minimumAlpha, byte* premultiplied)
         {
             var matte = Math.Min(coverage[(white[0] << 8) | black[0]],
                 Math.Min(coverage[(white[1] << 8) | black[1]], coverage[(white[2] << 8) | black[2]]));
-            return Math.Max(matte, Math.Max(color[0], Math.Max(color[1], color[2])));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void WriteBgra(byte* color, byte* destination, byte alpha)
-        {
-            var rgba = *(uint*)color;
-            *(uint*)destination = ((rgba & 0xFF) << 16) | (rgba & 0xFF00) |
-                ((rgba >> 16) & 0xFF) | ((uint)alpha << 24);
+            var peak = Math.Max(minimumAlpha[color[0]],
+                Math.Max(minimumAlpha[color[1]], minimumAlpha[color[2]]));
+            var alpha = Math.Max(matte, peak);
+            var offset = alpha << 8;
+            return (uint)(premultiplied[offset | color[0]] | (premultiplied[offset | color[1]] << 8) |
+                (premultiplied[offset | color[2]] << 16)) | ((uint)alpha << 24);
         }
 
         private static void ApplyCore(byte[] color, byte[] matteBlack, byte[] matteWhite,
@@ -116,7 +96,7 @@ namespace SnapCardViewHook.Core.Capture
                 var b = values[color[i + 2]];
                 
                 var alpha = Math.Max(coverage, Math.Max(r, Math.Max(g, b)));
-                var alphaByte = (byte)Math.Ceiling(Clamp01(alpha) * 255);
+                var alphaByte = ToAlpha(alpha);
                 color[i + 3] = alphaByte;
                 if (alphaByte == 0)
                 {
@@ -140,16 +120,6 @@ namespace SnapCardViewHook.Core.Capture
                 throw new ArgumentException("Transparent capture requires matching color, black and white RGBA buffers.");
         }
 
-        private static byte[] CreateCoverage(double[] values)
-        {
-            var coverage = new byte[256 * 256];
-            for (var white = 0; white < 256; white++)
-                for (var black = 0; black < 256; black++)
-                    coverage[(white << 8) | black] = (byte)Math.Ceiling(Clamp01(1 - (values[white] - values[black])) * 255);
-            // The original coverage of the maximum RGB transmission equals the minimum channel coverage.
-            return coverage;
-        }
-
         private static double[] CreateValues(bool linear)
         {
             var values = new double[256];
@@ -168,6 +138,36 @@ namespace SnapCardViewHook.Core.Capture
             return (byte)Math.Round(Clamp01(value) * 255, MidpointRounding.AwayFromZero);
         }
 
+        private static byte ToAlpha(double value) => (byte)Math.Ceiling(Clamp01(value) * 255);
         private static double Clamp01(double value) => Math.Max(0, Math.Min(1, value));
+
+        private sealed class LookupTables
+        {
+            public readonly byte[] Coverage = new byte[256 * 256];
+            public readonly byte[] MinimumAlpha = new byte[256];
+            public readonly byte[] Premultiplied = new byte[256 * 256];
+
+            public LookupTables(double[] values, bool linear)
+            {
+                // Match PNG reconstruction and its rounding; calculate these values only once.
+                for (var channel = 0; channel < 256; channel++)
+                    MinimumAlpha[channel] = ToAlpha(values[channel]);
+
+                for (var white = 0; white < 256; white++)
+                    for (var black = 0; black < 256; black++)
+                        Coverage[(white << 8) | black] = ToAlpha(1 - (values[white] - values[black]));
+
+                // Alpha zero keeps the default zero RGB; opaque pixels retain their original RGB.
+                for (var alpha = 1; alpha < 256; alpha++)
+                {
+                    var inverseAlpha = 255.0 / alpha;
+                    for (var channel = 0; channel < 256; channel++)
+                    {
+                        var straight = alpha == 255 ? (byte)channel : Encode(values[channel] * inverseAlpha, linear);
+                        Premultiplied[(alpha << 8) | channel] = (byte)((straight * alpha + 127) / 255);
+                    }
+                }
+            }
+        }
     }
 }
