@@ -20,6 +20,8 @@ namespace SnapCardViewHook.Core.Capture
         private long _nextFrame, _refreshAt, _validateAt;
         private int _stopped;
 
+        public event Action FrameReady;
+
         public CardLivePreview(CardCaptureOptions options, int fps)
         {
             _options = new CardCaptureOptions
@@ -61,7 +63,6 @@ namespace SnapCardViewHook.Core.Capture
             }
             var now = Stopwatch.GetTimestamp();
             if (now < _nextFrame) return;
-            _nextFrame = now + _interval;
             using (var gate = CardCaptureGate.TryEnter())
             {
                 CapturedCardPixels frame = null;
@@ -69,8 +70,11 @@ namespace SnapCardViewHook.Core.Capture
                 {
                     if (gate == null)
                     {
-                        ResetCapture(keepFraming: true);
-                        Clear();
+                        if (_capture != null)
+                        {
+                            ResetCapture(keepFraming: true);
+                            Clear();
+                        }
                         return;
                     }
                     // Do no native work if the display still has an unconsumed frame.
@@ -92,6 +96,7 @@ namespace SnapCardViewHook.Core.Capture
                         _validateAt = now + Stopwatch.Frequency / 4;
                     }
                     if (!_available.TryDequeue(out frame)) return;
+                    _nextFrame = Stopwatch.GetTimestamp() + _interval;
                     _capture.Capture(CancellationToken.None, frame);
                     Publish(frame);
                     frame = null;
@@ -111,8 +116,15 @@ namespace SnapCardViewHook.Core.Capture
         private void Publish(CapturedCardPixels frame)
         {
             if (Volatile.Read(ref _stopped) != 0) return;
-            ReturnFrame(Interlocked.Exchange(ref _latest, frame));
-            if (Volatile.Read(ref _stopped) != 0) Interlocked.Exchange(ref _latest, null);
+            var previous = Interlocked.Exchange(ref _latest, frame);
+            ReturnFrame(previous);
+            if (Volatile.Read(ref _stopped) != 0)
+            {
+                Interlocked.Exchange(ref _latest, null);
+                return;
+            }
+            // An occupied slot already has a notification or an active consumer.
+            if (previous == null) FrameReady?.Invoke();
         }
 
         private void ResetCapture(bool keepFraming = false)

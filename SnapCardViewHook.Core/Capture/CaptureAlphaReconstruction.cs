@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -52,16 +53,51 @@ namespace SnapCardViewHook.Core.Capture
                 {
                     var row = (byte*)destination + checked(y * stride);
                     var source = (pixels.Height - 1 - y) * rowBytes;
-                    for (var x = 0; x < rowBytes; x += 4, source += 4)
+                    var x = 0;
+                    for (; x <= rowBytes - 16; x += 16, source += 16)
+                        WritePremultipliedBgra4(color + source, black + source, white + source, row + x,
+                            coverage, minimumAlpha, premultiplied);
+                    for (; x < rowBytes; x += 4, source += 4)
                     {
                         var rgba = PremultipliedPixel(color + source, black + source, white + source,
                             coverage, minimumAlpha, premultiplied);
-                        *(uint*)(row + x) = ((rgba & 0xFF) << 16) | (rgba & 0xFF00) |
-                            ((rgba >> 16) & 0xFF) | (rgba & 0xFF000000);
+                        *(uint*)(row + x) = ToBgra(rgba);
                     }
                 }
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void WritePremultipliedBgra4(byte* color, byte* black, byte* white,
+            byte* destination, byte* coverage, byte* minimumAlpha, byte* premultiplied)
+        {
+            // Each SIMD lane is one pixel. Table reads stay scalar; min/max uses exact byte values.
+            var matte = Vector4.Min(ReadCoverage4(black, white, coverage),
+                Vector4.Min(ReadCoverage4(black + 1, white + 1, coverage), ReadCoverage4(black + 2, white + 2, coverage)));
+            var alpha = matte;
+            if (matte != new Vector4(255))
+            {
+                var peak = Vector4.Max(ReadChannel4(color), Vector4.Max(ReadChannel4(color + 1), ReadChannel4(color + 2)));
+                // MinimumAlpha is monotonic, so only the brightest channel needs a lookup.
+                alpha = Vector4.Max(matte, new Vector4(minimumAlpha[(int)peak.X], minimumAlpha[(int)peak.Y],
+                    minimumAlpha[(int)peak.Z], minimumAlpha[(int)peak.W]));
+            }
+            *(uint*)destination = ToBgra(PackPremultipliedPixel(color, (int)alpha.X, premultiplied));
+            *(uint*)(destination + 4) = ToBgra(PackPremultipliedPixel(color + 4, (int)alpha.Y, premultiplied));
+            *(uint*)(destination + 8) = ToBgra(PackPremultipliedPixel(color + 8, (int)alpha.Z, premultiplied));
+            *(uint*)(destination + 12) = ToBgra(PackPremultipliedPixel(color + 12, (int)alpha.W, premultiplied));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector4 ReadCoverage4(byte* black, byte* white, byte* coverage) => new Vector4(
+            coverage[(white[0] << 8) | black[0]], coverage[(white[4] << 8) | black[4]],
+            coverage[(white[8] << 8) | black[8]], coverage[(white[12] << 8) | black[12]]);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector4 ReadChannel4(byte* color) => new Vector4(color[0], color[4], color[8], color[12]);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint ToBgra(uint rgba) => ((rgba & 0xFF) << 16) | (rgba & 0xFF00FF00) | ((rgba >> 16) & 0xFF);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe uint PremultipliedPixel(byte* color, byte* black, byte* white,
@@ -69,9 +105,16 @@ namespace SnapCardViewHook.Core.Capture
         {
             var matte = Math.Min(coverage[(white[0] << 8) | black[0]],
                 Math.Min(coverage[(white[1] << 8) | black[1]], coverage[(white[2] << 8) | black[2]]));
-            var peak = Math.Max(minimumAlpha[color[0]],
-                Math.Max(minimumAlpha[color[1]], minimumAlpha[color[2]]));
-            var alpha = Math.Max(matte, peak);
+            if (matte == 255) return *(uint*)color | 0xFF000000u;
+            var peak = minimumAlpha[Math.Max(color[0], Math.Max(color[1], color[2]))];
+            return PackPremultipliedPixel(color, Math.Max(matte, peak), premultiplied);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe uint PackPremultipliedPixel(byte* color, int alpha, byte* premultiplied)
+        {
+            if (alpha == 0) return 0;
+            if (alpha == 255) return *(uint*)color | 0xFF000000u;
             var offset = alpha << 8;
             return (uint)(premultiplied[offset | color[0]] | (premultiplied[offset | color[1]] << 8) |
                 (premultiplied[offset | color[2]] << 16)) | ((uint)alpha << 24);

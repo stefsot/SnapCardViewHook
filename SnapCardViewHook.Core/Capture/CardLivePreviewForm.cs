@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -17,8 +18,8 @@ namespace SnapCardViewHook.Core.Capture
         {
             Text = "Transparent", AutoSize = true, Margin = new Padding(8, 8, 3, 3)
         };
-        private readonly System.Windows.Forms.Timer _timer = new System.Windows.Forms.Timer { Interval = 16 };
         private readonly CardLivePreview _preview;
+        private SynchronizationContext _uiContext;
         private TransparentCardPreviewForm _overlay;
         private Size _coloredClientSize;
         private FormWindowState _coloredWindowState;
@@ -49,8 +50,12 @@ namespace SnapCardViewHook.Core.Capture
             _transparent.CheckedChanged += TransparencyChanged;
             Controls.Add(_viewport);
             Controls.Add(toolbar);
-            _timer.Tick += DisplayFrame;
-            Shown += (sender, args) => { _preview.Start(); _timer.Start(); };
+            Shown += (sender, args) =>
+            {
+                _uiContext = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+                _preview.FrameReady += OnFrameReady;
+                _preview.Start();
+            };
         }
 
         private void TransparencyChanged(object sender, EventArgs args)
@@ -135,39 +140,53 @@ namespace SnapCardViewHook.Core.Capture
             }
         }
 
-        private async void DisplayFrame(object sender, EventArgs args)
+        private void OnFrameReady()
         {
-            if (_converting) return;
-            var pixels = _preview.TakeFrame();
-            if (pixels == null) return;
-            if (pixels.Rgba == null) { ShowFrame(null); return; }
+            // Post through the UI context so form handle recreation cannot lose a notification.
+            try { _uiContext.Post(DisplayFrame, null); }
+            catch (InvalidOperationException) { } // The UI thread has shut down.
+        }
+
+        private async void DisplayFrame(object state)
+        {
+            if (_converting || IsDisposed || Disposing) return;
             _converting = true;
-            var bitmap = _back;
-            _back = null;
             try
             {
-                await Task.Run(() =>
+                while (!IsDisposed && !Disposing)
                 {
-                    bitmap ??= new Bitmap(pixels.Width, pixels.Height, PixelFormat.Format32bppPArgb);
-                    WriteBitmap(pixels, bitmap);
-                });
-                if (IsDisposed || Disposing) return;
-                ShowFrame(bitmap);
-                _back = _front;
-                _front = bitmap;
-                bitmap = null;
+                    var pixels = _preview.TakeFrame();
+                    if (pixels == null) break;
+                    Bitmap bitmap = null;
+                    try
+                    {
+                        if (pixels.Rgba == null) { ShowFrame(null); continue; }
+                        bitmap = _back;
+                        _back = null;
+                        await Task.Run(() =>
+                        {
+                            bitmap ??= new Bitmap(pixels.Width, pixels.Height, PixelFormat.Format32bppPArgb);
+                            WriteBitmap(pixels, bitmap);
+                        });
+                        if (IsDisposed || Disposing) return;
+                        ShowFrame(bitmap);
+                        _back = _front;
+                        _front = bitmap;
+                        bitmap = null;
+                    }
+                    catch (Exception error)
+                    {
+                        System.Diagnostics.Debug.WriteLine(error);
+                        if (!IsDisposed && !Disposing) ShowFrame(null);
+                    }
+                    finally
+                    {
+                        bitmap?.Dispose();
+                        _preview.ReturnFrame(pixels);
+                    }
+                }
             }
-            catch (Exception error)
-            {
-                System.Diagnostics.Debug.WriteLine(error);
-                if (!IsDisposed && !Disposing) ShowFrame(null);
-            }
-            finally
-            {
-                bitmap?.Dispose();
-                _preview.ReturnFrame(pixels);
-                _converting = false;
-            }
+            finally { _converting = false; }
         }
 
         private static void WriteBitmap(CapturedCardPixels pixels, Bitmap bitmap)
@@ -185,8 +204,7 @@ namespace SnapCardViewHook.Core.Capture
         {
             if (disposing)
             {
-                _timer.Stop();
-                _timer.Dispose();
+                _preview.FrameReady -= OnFrameReady;
                 _preview.Dispose();
                 CloseOverlay();
                 _picture.Image = null;

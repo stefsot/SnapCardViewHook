@@ -44,13 +44,16 @@ namespace SnapCardViewHook.Core
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void void_this__delegate_(IntPtr thisPtr);
-
+        
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void CardView_Initialize_delegate_(
             IntPtr thisPtr, IntPtr cardDef, int cost, int power, int rarity,
             IntPtr borderDefId, IntPtr artVariantDefId, IntPtr surfaceEffectDefId,
-            IntPtr cardRevealEffectDefId, int cardRevealEffectType, bool showRevealEffectOnStart,
-            int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue, 
+            IntPtr cardRevealEffectDefId, int cardRevealEffectType,
+            [MarshalAs(UnmanagedType.U1)] bool showRevealEffectOnStart,
+            int logoEffectId, IntPtr cardBackDefId,
+            [MarshalAs(UnmanagedType.U1)] bool isMorph,
+            [MarshalAs(UnmanagedType.U1)] bool setTransparentQueue,
             IntPtr factionDefId, IntPtr methodInfo);
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
