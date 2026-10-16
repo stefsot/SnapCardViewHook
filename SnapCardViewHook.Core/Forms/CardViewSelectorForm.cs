@@ -31,6 +31,9 @@ namespace SnapCardViewHook.Core.Forms
             new ConcurrentDictionary<IntPtr, byte>();
         private volatile string _descriptionOverride;
         private volatile bool _overrideDescription;
+        private volatile string _replacementCardKey;
+        // Null means all cards; empty means filtering is enabled without a valid selection.
+        private volatile string _replacementTargetId;
 
         private IntPtr _clonedVariantObj = IntPtr.Zero;
 
@@ -73,9 +76,12 @@ namespace SnapCardViewHook.Core.Forms
             variantBox.Items.AddRange(_variantList?.Keys.ToArray() ?? Array.Empty<string>());
             borderBox.Items.AddRange(_borderList?.Keys.ToArray() ?? Array.Empty<string>());
             cardBox.Items.AddRange(_cardDefList?.Keys.ToArray() ?? Array.Empty<string>());
+            replacementTargetCardBox.Items.AddRange(_cardDefList?.Keys.ToArray() ?? Array.Empty<string>());
             cardBackBox.Items.AddRange(_cardBackList?.Keys.ToArray() ?? Array.Empty<string>());
             boardBox.Items.AddRange(_gameBoardList?.Keys.ToArray() ?? Array.Empty<string>());
             factionBox.Items.AddRange(_factionList?.Keys.ToArray() ?? Array.Empty<string>());
+            replacementCard_Changed(this, EventArgs.Empty);
+            replacementTarget_Changed(this, EventArgs.Empty);
 
             // set hook override
             SnapTypeDataCollector.CardViewInitializeHookOverride = CardViewInitOverride;
@@ -126,6 +132,7 @@ namespace SnapCardViewHook.Core.Forms
             int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue,
             IntPtr factionDefId, IntPtr methodInfo)
         {
+            // Match the incoming card before replacement changes its definition and defaults.
             cardDef = GetCardOverride(cardDef, ref cost, ref power, ref artVariantDefId);
             artVariantDefId = GetVariantOverride(artVariantDefId, cardDef);
             surfaceEffectDefId = GetSurfaceEffectOverride(surfaceEffectDefId);
@@ -186,11 +193,12 @@ namespace SnapCardViewHook.Core.Forms
 
         private IntPtr GetCardOverride(IntPtr original, ref int cost, ref int power, ref IntPtr artVariantDefId)
         {
-            if (!overrideCardCheckBox.Checked || cardBox.SelectedItem == null)
+            var replacement = _replacementCardKey;
+            if (!overrideCardCheckBox.Checked || replacement == null || !MatchesReplacementTarget(original))
                 return original;
 
             var cardDefId =
-                IL2CppHelper.GetStaticFieldValue(_cardDefList[cardBox.SelectedItem.ToString()].Ptr);  
+                IL2CppHelper.GetStaticFieldValue(_cardDefList[replacement].Ptr);
             var overrideCardDefObjPtr = SnapTypeDataCollector.CardDefList_Find(cardDefId);
             
             if(overrideCardDefObjPtr == IntPtr.Zero )
@@ -203,6 +211,81 @@ namespace SnapCardViewHook.Core.Forms
             artVariantDefId = IntPtr.Zero;
 
             return overrideCardDefObjPtr;
+        }
+
+        private bool MatchesReplacementTarget(IntPtr original)
+        {
+            // The hook reads one UI-published value, without accessing the target controls.
+            var targetId = _replacementTargetId;
+            if (targetId == null) return true;
+            return targetId.Length != 0 && original != IntPtr.Zero &&
+                string.Equals(new CardDefWrapper(original).GetId(), targetId, StringComparison.Ordinal);
+        }
+
+        private static string ListedCardSelection(ComboBox combo)
+        {
+            var text = combo.Text.Trim();
+            return combo.Items.Cast<string>().FirstOrDefault(item =>
+                string.Equals(item, text, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static void CommitCardSelection(ComboBox combo)
+        {
+            var selected = ListedCardSelection(combo);
+            if (selected == null)
+            {
+                combo.SelectedIndex = -1;
+                combo.Text = string.Empty;
+            }
+            else
+            {
+                combo.SelectedItem = selected;
+                combo.Text = selected;
+            }
+        }
+
+        private void cardSelection_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            CommitCardSelection((ComboBox)sender);
+        }
+
+        private void cardSelection_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter) return;
+            var combo = (ComboBox)sender;
+            CommitCardSelection(combo);
+            combo.DroppedDown = false;
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+        }
+
+        private void replacementCard_Changed(object sender, EventArgs e)
+        {
+            // Do not keep using the previous selection while the user types an invalid value.
+            _replacementCardKey = ListedCardSelection(cardBox);
+        }
+
+        private void replacementTarget_Changed(object sender, EventArgs e)
+        {
+            replacementTargetCardBox.Enabled = onlyReplaceTargetCardCheckBox.Checked;
+            if (!onlyReplaceTargetCardCheckBox.Checked)
+            {
+                _replacementTargetId = null;
+                return;
+            }
+
+            // Resolve the ID's value rather than assuming its field name or native pointer
+            // is its identity. No selection must never broaden replacement to all cards.
+            _replacementTargetId = string.Empty;
+            var targetId = string.Empty;
+            var selected = ListedCardSelection(replacementTargetCardBox);
+            if (selected != null &&
+                _cardDefList != null && _cardDefList.TryGetValue(selected, out var field))
+            {
+                var nativeId = IL2CppHelper.GetStaticFieldValue(field.Ptr);
+                targetId = new IL2CppStringRef(nativeId).GetObject() ?? string.Empty;
+            }
+            _replacementTargetId = targetId;
         }
 
         private unsafe IntPtr GetVariantOverride(IntPtr original, IntPtr cardDef)
@@ -300,6 +383,8 @@ namespace SnapCardViewHook.Core.Forms
             SnapTypeDataCollector.LocalizeStringEventUpdateStringOverride = null;
             _overrideDescription = false;
             _descriptionOverride = null;
+            _replacementCardKey = null;
+            _replacementTargetId = null;
             _cardDescriptionEvents.Clear();
 
             // set default flip state to false
@@ -369,6 +454,8 @@ namespace SnapCardViewHook.Core.Forms
         private CardCatalogForm _cardCatalogForm;
         private CardCaptureForm _cardCaptureForm;
         private CardVideoCaptureForm _cardVideoCaptureForm;
+        private CardCaptureForm _deckCaptureForm;
+        private CardVideoCaptureForm _deckVideoCaptureForm;
 
         private void capturePngMenuItem_Click(object sender, EventArgs e)
         {
@@ -391,6 +478,29 @@ namespace SnapCardViewHook.Core.Forms
             if (!_cardVideoCaptureForm.Visible)
                 _cardVideoCaptureForm.Show(this);
             _cardVideoCaptureForm.BringToFront();
+        }
+
+        private void captureDeckPngMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_deckCaptureForm == null || _deckCaptureForm.IsDisposed)
+                _deckCaptureForm = new CardCaptureForm(CaptureSubject.Deck);
+            if (!_deckCaptureForm.Visible)
+                _deckCaptureForm.Show(this);
+            _deckCaptureForm.BringToFront();
+        }
+
+        private void captureDeckVideoMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_deckVideoCaptureForm == null || _deckVideoCaptureForm.IsDisposed)
+            {
+                var frames = _deckCaptureForm != null && !_deckCaptureForm.IsDisposed
+                    ? _deckCaptureForm.GetFrameOptions()
+                    : new CardCaptureOptions { Subject = CaptureSubject.Deck, Width = 1600, Height = 1064, PaddingPercent = 3 };
+                _deckVideoCaptureForm = new CardVideoCaptureForm(frames);
+            }
+            if (!_deckVideoCaptureForm.Visible)
+                _deckVideoCaptureForm.Show(this);
+            _deckVideoCaptureForm.BringToFront();
         }
 
         private void showCatalogButton_Click(object sender, EventArgs e)

@@ -26,6 +26,7 @@ namespace SnapCardViewHook.Core.Capture
         {
             _options = new CardCaptureOptions
             {
+                Subject = options.Subject,
                 Width = options.Width, Height = options.Height, PaddingPercent = options.PaddingPercent,
                 IncludeShadow = options.IncludeShadow, TransparentBackground = true
             };
@@ -36,7 +37,7 @@ namespace SnapCardViewHook.Core.Capture
                 _available.Enqueue(new CapturedCardPixels
                 {
                     Width = options.Width, Height = options.Height,
-                    Rgba = new byte[length], MatteBlackRgba = new byte[length], MatteWhiteRgba = new byte[length]
+                    Data = new byte[length], Layout = CapturePixelLayout.PremultipliedBgra
                 });
         }
 
@@ -90,7 +91,7 @@ namespace SnapCardViewHook.Core.Capture
                     {
                         _runtime = new Il2CppRuntime();
                         _capture = new UnityCardCapture(_runtime);
-                        _capture.Prepare(_options, CancellationToken.None, _anchor);
+                        _capture.Prepare(_options, CancellationToken.None, _anchor, CapturePixelLayout.PremultipliedBgra);
                         // Occasional recycling bounds native roots and refreshes scene isolation lists.
                         _refreshAt = now + Stopwatch.Frequency * 30;
                         _validateAt = now + Stopwatch.Frequency / 4;
@@ -144,7 +145,9 @@ namespace SnapCardViewHook.Core.Capture
         // Native cleanup stays on the owning game thread, even when the window closes.
         public void Dispose()
         {
-            Interlocked.Exchange(ref _stopped, 1);
+            if (Interlocked.Exchange(ref _stopped, 1) != 0) return;
+            SnapTypeDataCollector.RemoveGameUiCallback(_callback);
+            SnapTypeDataCollector.ExecuteActionInGameUiThread(() => ResetCapture());
             Interlocked.Exchange(ref _latest, null);
             while (_available.TryDequeue(out _)) { }
         }

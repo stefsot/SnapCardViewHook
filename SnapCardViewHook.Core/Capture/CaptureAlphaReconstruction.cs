@@ -43,10 +43,10 @@ namespace SnapCardViewHook.Core.Capture
             var rowBytes = checked(pixels.Width * 4);
             var length = checked(rowBytes * pixels.Height);
             if (destination == IntPtr.Zero || Math.Abs((long)stride) < rowBytes ||
-                pixels.Rgba?.Length != length || pixels.MatteBlackRgba?.Length != length || pixels.MatteWhiteRgba?.Length != length)
+                pixels.Data?.Length != length || pixels.MatteBlackRgba?.Length != length || pixels.MatteWhiteRgba?.Length != length)
                 throw new ArgumentException("Invalid preview buffers.", nameof(pixels));
             var lookup = pixels.LinearColorSpace ? LinearLookup : GammaLookup;
-            fixed (byte* color = pixels.Rgba, black = pixels.MatteBlackRgba, white = pixels.MatteWhiteRgba,
+            fixed (byte* color = pixels.Data, black = pixels.MatteBlackRgba, white = pixels.MatteWhiteRgba,
                 coverage = lookup.Coverage, minimumAlpha = lookup.MinimumAlpha, premultiplied = lookup.Premultiplied)
             {
                 for (var y = 0; y < pixels.Height; y++)

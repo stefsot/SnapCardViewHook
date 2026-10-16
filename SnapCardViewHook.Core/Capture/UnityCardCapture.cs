@@ -1,7 +1,9 @@
 using IL2CppApi.Runtime;
 using IL2CppApi.Wrappers;
+using SnapCardViewHook.Native;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -9,11 +11,13 @@ using System.Threading;
 
 namespace SnapCardViewHook.Core.Capture
 {
-    internal sealed class UnityCardCapture : IDisposable
+    internal sealed partial class UnityCardCapture : IDisposable
     {
         private const string Core = "UnityEngine.CoreModule.dll";
         private const string Universal = "Unity.RenderPipelines.Universal.Runtime.dll";
         private const string UrpNamespace = "UnityEngine.Rendering.Universal";
+        private const int Direct3D11 = 2;
+        private const int Rgba8Unorm = 8; // UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm.
         private static readonly string[] NoArgs = Array.Empty<string>();
         private readonly Il2CppRuntime _runtime;
         private readonly IL2CppClassWrapper _object, _component, _gameObject, _behaviour, _transform;
@@ -25,6 +29,10 @@ namespace SnapCardViewHook.Core.Capture
         private CardCaptureOptions _options;
         private CardCaptureAnchor _anchor;
         private IntPtr _mainRenderer, _captureCamera, _target, _readTarget, _pixels, _request;
+        private IntPtr _colorTarget, _matteBlackTarget, _matteWhiteTarget;
+        private CaptureGpuPass _gpuPass;
+        private CapturePixelLayout _pixelLayout;
+        private IntPtr[] _cards, _mainRenderers;
         private IntPtr _selectedDetails, _selectedEntity;
         private IntPtr[] _unrelatedRenderers, _canvasSuppressionRoots, _terrains, _suppressedFeatures, _matteFeatures;
         private (IntPtr Key, IntPtr Texture)[] _cameraInputs;
@@ -32,6 +40,9 @@ namespace SnapCardViewHook.Core.Capture
         private int _rendererCount, _pixelByteCount;
         private bool _linearColorSpace, _writeSrgb;
         private string _sourceCameraName;
+
+        public long BytesPerCapturedFrame => (long)_pixelByteCount *
+            (_gpuPass == null && _options.TransparentBackground ? 3 : 1);
 
         public UnityCardCapture(Il2CppRuntime runtime)
         {
@@ -72,7 +83,8 @@ namespace SnapCardViewHook.Core.Capture
             runtime.Method(_texture2D, "GetRawTextureData", false);
         }
 
-        public void Prepare(CardCaptureOptions options, CancellationToken cancellation, CardCaptureAnchor anchor = null)
+        public void Prepare(CardCaptureOptions options, CancellationToken cancellation, CardCaptureAnchor anchor = null,
+            CapturePixelLayout pixelLayout = CapturePixelLayout.StraightBgra)
         {
             if (_resources != null) throw new InvalidOperationException("Card capture has already been prepared.");
             cancellation.ThrowIfCancellationRequested();
@@ -80,15 +92,23 @@ namespace SnapCardViewHook.Core.Capture
                 throw new InvalidOperationException("Card capture must be requested outside the camera rendering loop.");
             if (!_runtime.IsInstance(GetReference(_pipelineManager, IntPtr.Zero, "currentPipeline"), _pipeline))
                 throw new NotSupportedException("The running game is not using the expected Universal Render Pipeline.");
+            if (!Enum.IsDefined(typeof(CapturePixelLayout), pixelLayout))
+                throw new ArgumentOutOfRangeException(nameof(pixelLayout));
+            _pixelLayout = pixelLayout;
 
-            var card = FindSelectedCard();
-            EnsureReady(card);
-            var mainRenderer = FieldReference(card, _cardRenderer, "_CardRenderer");
-            if (!Visible(mainRenderer)) throw new InvalidOperationException("The selected card is not currently visible. Open its details view first.");
-            var roots = CardRoots(card);
-            var exclusions = ExcludedRoots(card, options).ToArray();
+            _options = options;
+            _cards = options.Subject == CaptureSubject.Deck ? FindSelectedDeck() : new[] { FindSelectedCard() };
+            foreach (var card in _cards) EnsureReady(card);
+            if (options.Subject == CaptureSubject.Deck)
+                _deckCardTransforms = _cards.Select(card => GetReference(_component, card, "transform")).ToArray();
+            _mainRenderers = _cards.Select(card => FieldReference(card, _cardRenderer, "_CardRenderer")).ToArray();
+            if (_mainRenderers.Any(renderer => !Visible(renderer)))
+                throw new InvalidOperationException("The selected cards are not all visible. Keep the capture view open and wait for loading to finish.");
+            var mainRenderer = _mainRenderers[0];
+            var roots = _cards.SelectMany(CardRoots).Distinct().ToList();
+            var exclusions = _cards.SelectMany(card => ExcludedRoots(card, options)).Distinct().ToArray();
             var allowed = new HashSet<IntPtr>(roots.SelectMany(r => Descendants(r, _renderer)));
-            allowed.Add(mainRenderer);
+            allowed.UnionWith(_mainRenderers);
             foreach (var excluded in exclusions)
                 foreach (var renderer in Descendants(excluded, _renderer)) allowed.Remove(renderer);
             var visible = allowed.Where(Visible).ToArray();
@@ -97,15 +117,15 @@ namespace SnapCardViewHook.Core.Capture
             foreach (var renderer in visible)
                 mask |= 1 << Get<int>(_gameObject, GameOf(renderer), "layer");
 
-            var selection = FindSourceCamera(mainRenderer);
-            _options = options;
+            var selection = options.Subject == CaptureSubject.Deck ? _deckCamera : FindSourceCamera(mainRenderer);
             _anchor = anchor ?? new CardCaptureAnchor();
             _mainRenderer = mainRenderer;
             _rendererCount = visible.Length;
             _sourceCameraName = ObjectName(selection.Camera);
             _readRect = new CaptureRect(options.Width, options.Height);
             _pixelByteCount = checked(options.Width * options.Height * 4);
-            var framing = CalculateCaptureBounds(card, mainRenderer, selection.Camera, visible, options, _anchor);
+            var subject = options.Subject == CaptureSubject.Deck ? _selectedDeckView : _cards[0];
+            var framing = CalculateCaptureBounds(subject, selection.Camera, visible, options, _anchor);
             PrepareScene(roots, exclusions, allowed, selection.Features);
             cancellation.ThrowIfCancellationRequested();
 
@@ -118,7 +138,7 @@ namespace SnapCardViewHook.Core.Capture
             }
         }
 
-        private CaptureFraming CalculateCaptureBounds(IntPtr card, IntPtr mainRenderer, IntPtr source,
+        private CaptureFraming CalculateCaptureBounds(IntPtr subject, IntPtr source,
             IntPtr[] visible, CardCaptureOptions options, CardCaptureAnchor anchor)
         {
             var sourceTransform = GetReference(_component, source, "transform");
@@ -130,10 +150,12 @@ namespace SnapCardViewHook.Core.Capture
             CaptureFraming framing;
             if (anchor.Initialized)
             {
-                if (card != anchor.Card || source != anchor.SourceCamera ||
-                    CallValue<int>(_object, card, "GetInstanceID", NoArgs) != anchor.CardInstanceId ||
+                if (subject != anchor.Card || source != anchor.SourceCamera ||
+                    CallValue<int>(_object, subject, "GetInstanceID", NoArgs) != anchor.CardInstanceId ||
                     CallValue<int>(_object, source, "GetInstanceID", NoArgs) != anchor.SourceCameraInstanceId)
-                    throw new InvalidOperationException("The selected card or source camera changed during recording.");
+                    throw new InvalidOperationException("The selected capture view or source camera changed during recording.");
+                if (options.Subject == CaptureSubject.Deck && !MatchesDeckAnchor(anchor))
+                    throw new InvalidOperationException("The deck's cards changed during recording.");
                 framing = anchor.Framing.Copy();
                 forward = anchor.Forward;
                 rotation = anchor.Rotation;
@@ -142,15 +164,23 @@ namespace SnapCardViewHook.Core.Capture
             }
             else
             {
-                framing = CaptureFraming.FitCard(CardFramingCorners(card, mainRenderer),
+                var corners = _cards.SelectMany((card, index) => CardFramingCorners(card, _mainRenderers[index])).ToArray();
+                framing = CaptureFraming.FitCard(corners,
                     Get<CaptureVector3>(_transform, sourceTransform, "right"), Get<CaptureVector3>(_transform, sourceTransform, "up"),
                     forward, Get<CaptureVector3>(_transform, sourceTransform, "position"),
                     orthographic, fieldOfView, options);
-                anchor.Card = card; anchor.SourceCamera = source;
-                anchor.CardInstanceId = CallValue<int>(_object, card, "GetInstanceID", NoArgs);
+                anchor.Card = subject; anchor.SourceCamera = source;
+                anchor.CardInstanceId = CallValue<int>(_object, subject, "GetInstanceID", NoArgs);
                 anchor.SourceCameraInstanceId = CallValue<int>(_object, source, "GetInstanceID", NoArgs);
                 anchor.Framing = framing.Copy(); anchor.Forward = forward; anchor.Rotation = rotation;
                 anchor.Orthographic = orthographic; anchor.FieldOfView = fieldOfView;
+                if (options.Subject == CaptureSubject.Deck)
+                {
+                    anchor.DeckCards = (IntPtr[])_cards.Clone();
+                    anchor.DeckModels = _cards.Select(card => GetReference(_cardView, card, "CardModel")).ToArray();
+                    anchor.DeckCardInstanceIds = _cards.Select(card => CallValue<int>(_object, card, "GetInstanceID", NoArgs)).ToArray();
+                    anchor.DeckCardParents = _deckCardTransforms.Select(transform => GetReference(_transform, transform, "parent")).ToArray();
+                }
             }
             framing.IncludeDepthBounds(visible.Select(r => Get<CaptureBounds>(_renderer, r, "bounds")).ToArray(), forward);
             return framing;
@@ -159,7 +189,7 @@ namespace SnapCardViewHook.Core.Capture
         private void CreateRenderResources(SourceCamera selection, CaptureFraming framing, int mask)
         {
             var cameraObject = NewUnityObject(_gameObject, _resources, new[] { "System.String" },
-                Il2CppArgument.Ref(_runtime.String("SnapCardViewHook - card capture")));
+                Il2CppArgument.Ref(_runtime.String("SnapCardViewHook - " + _options.Subject + " capture")));
             var camera = Call(_gameObject, cameraObject, "AddComponent", new[] { "System.Type" },
                 Il2CppArgument.Ref(_runtime.TypeObject(_camera)));
             _captureCamera = camera;
@@ -195,26 +225,96 @@ namespace SnapCardViewHook.Core.Capture
             Call(_requestType, _request, ".ctor", NoArgs);
             _runtime.WriteReference(_request, _runtime.Field(_requestType, "destination"), _target);
             _linearColorSpace = Get<int>(Engine("QualitySettings"), IntPtr.Zero, "activeColorSpace") == 1;
+            if (TryCreateGpuResources(hdr)) return;
+
+            // Original CPU path: reuse one LDR target and read each pass before overwriting it.
             _readTarget = hdr ? NewRenderTexture(_options.Width, _options.Height, 0, 0, _resources) : _target;
+            _colorTarget = _matteBlackTarget = _matteWhiteTarget = _readTarget;
             _writeSrgb = _linearColorSpace && Get<bool>(_renderTexture, _readTarget, "sRGB");
-            _pixels = NewUnityObject(_texture2D, _resources,
+            _pixels = NewReadbackTexture(_resources, linear: false);
+        }
+
+        private bool TryCreateGpuResources(bool hdr)
+        {
+            var resources = new CaptureStateScope();
+            var ready = false;
+            try
+            {
+                var systemInfo = Engine("SystemInfo");
+                if (Get<int>(systemInfo, IntPtr.Zero, "graphicsDeviceType") != Direct3D11 ||
+                    !Get<bool>(systemInfo, IntPtr.Zero, "supportsComputeShaders"))
+                {
+                    Debug.WriteLine("Card capture is using CPU processing: Direct3D 11 compute shaders are unavailable.");
+                    return false;
+                }
+                _runtime.Method(_gl, "IssuePluginEvent", true, "System.IntPtr", "System.Int32");
+
+                // Keep all three LDR passes on the GPU. Only the final shader output is read back.
+                _colorTarget = hdr || _options.TransparentBackground
+                    ? NewRenderTexture(_options.Width, _options.Height, 0, 0, resources) : _target;
+                _writeSrgb = _linearColorSpace && Get<bool>(_renderTexture, _colorTarget, "sRGB");
+                if (_options.TransparentBackground)
+                {
+                    _matteBlackTarget = NewRenderTexture(_options.Width, _options.Height, 0, 0, resources);
+                    _matteWhiteTarget = NewRenderTexture(_options.Width, _options.Height, 0, 0, resources);
+                }
+                else { _matteBlackTarget = _matteWhiteTarget = IntPtr.Zero; }
+                _readTarget = NewRenderTexture(_options.Width, _options.Height, 0, 0, resources, randomWrite: true);
+                _pixels = NewReadbackTexture(resources, linear: true);
+
+                // Never pass another graphics API's native pointers to the D3D11 bridge.
+                // GetNativeTexturePtr synchronizes with the render thread: cache once at setup.
+                var texture = Engine("Texture");
+                IntPtr NativeTexture(IntPtr value) => value == IntPtr.Zero ? IntPtr.Zero :
+                    CallValue<IntPtr>(texture, value, "GetNativeTexturePtr", NoArgs);
+                var gpuPass = new CaptureGpuPass(NativeTexture(_colorTarget), NativeTexture(_matteBlackTarget),
+                    NativeTexture(_matteWhiteTarget), NativeTexture(_readTarget), _options.Width, _options.Height,
+                    _linearColorSpace, _options.TransparentBackground,
+                    _pixelLayout != CapturePixelLayout.StraightBgra, _pixelLayout != CapturePixelLayout.PremultipliedRgba);
+                resources.RestoreWith(() => gpuPass.Dispose());
+                _gpuPass = gpuPass;
+                _resources.RestoreWith(resources.Dispose);
+                ready = true;
+                return true;
+            }
+            catch (Exception error) when (error is NotSupportedException || error is MissingMemberException ||
+                                          error is InvalidOperationException)
+            {
+                Debug.WriteLine("Card capture is using CPU processing because GPU setup failed: " + error);
+                return false;
+            }
+            finally
+            {
+                if (!ready)
+                {
+                    _gpuPass = null;
+                    // A cleanup failure must propagate; do not continue with partially released resources.
+                    resources.Dispose();
+                }
+            }
+        }
+
+        private IntPtr NewReadbackTexture(CaptureStateScope resources, bool linear) =>
+            NewUnityObject(_texture2D, resources,
                 new[] { "System.Int32", "System.Int32", "UnityEngine.TextureFormat", "System.Boolean", "System.Boolean" },
                 Il2CppArgument.Value(_options.Width), Il2CppArgument.Value(_options.Height), Il2CppArgument.Value(4),
-                Il2CppArgument.Value(false), Il2CppArgument.Value(false)); // RGBA32; no mip chain; sRGB.
-        }
+                Il2CppArgument.Value(false), Il2CppArgument.Value(linear)); // RGBA32, no mip chain.
 
         public CapturedCardPixels Capture(CancellationToken cancellation, CapturedCardPixels reusable = null)
         {
             if (_resources == null) throw new InvalidOperationException("Prepare card capture before capturing a frame.");
             if (reusable != null && (reusable.Width != _options.Width || reusable.Height != _options.Height ||
-                reusable.Rgba?.Length != _pixelByteCount || (_options.TransparentBackground &&
-                (reusable.MatteBlackRgba?.Length != _pixelByteCount || reusable.MatteWhiteRgba?.Length != _pixelByteCount))))
+                reusable.Data?.Length != _pixelByteCount ||
+                (reusable.MatteBlackRgba != null && reusable.MatteBlackRgba.Length != _pixelByteCount) ||
+                (reusable.MatteWhiteRgba != null && reusable.MatteWhiteRgba.Length != _pixelByteCount)))
                 throw new ArgumentException("Reusable frame buffers must match the capture dimensions.", nameof(reusable));
             cancellation.ThrowIfCancellationRequested();
             if (GetReference(_camera, IntPtr.Zero, "current") != IntPtr.Zero)
                 throw new InvalidOperationException("Card capture must be requested outside the camera rendering loop.");
             if (!Alive(_anchor.Card) || !Alive(_anchor.SourceCamera) || !Visible(_mainRenderer))
-                throw new InvalidOperationException("The captured card or source camera is no longer available. Keep the card-details view open.");
+                throw new InvalidOperationException("The capture view or source camera is no longer available. Keep the selected view open.");
+            if (_options.Subject == CaptureSubject.Deck && !IsSelectedDeckCurrent(checkReadiness: false))
+                throw new InvalidOperationException("The deck view closed or its cards changed. Keep the same 12-card overview open during capture.");
 
             CapturedCardPixels result;
             using (var state = new CaptureStateScope())
@@ -232,15 +332,18 @@ namespace SnapCardViewHook.Core.Capture
                 cancellation.ThrowIfCancellationRequested();
                 
                 result = reusable ?? new CapturedCardPixels();
-                result.Rgba = RenderPixels(new CaptureColor(1), cancellation, result.Rgba);
+                RenderTo(_colorTarget, new CaptureColor(1), cancellation);
                 result.Width = _options.Width;
                 result.Height = _options.Height;
                 result.RendererCount = _rendererCount;
-                result.LinearColorSpace = _linearColorSpace;
+                result.CardCount = _cards.Length;
+                result.Layout = _pixelLayout;
                 result.SourceCamera = _sourceCameraName;
-               
-                if (!_anchor.Initialized && !HasVisiblePixels(result.Rgba))
-                    throw new InvalidOperationException("The offscreen target is blank. No image was saved. Check the active card and renderer compatibility.");
+                result.LinearColorSpace = _linearColorSpace;
+                result.NeedsCpuProcessing = _gpuPass == null;
+                if (result.NeedsCpuProcessing) result.Data = ReadCapturedPixels(result.Data);
+                if (!result.NeedsCpuProcessing || !_options.TransparentBackground)
+                    result.MatteBlackRgba = result.MatteWhiteRgba = null;
 
                 if (_options.TransparentBackground)
                 {
@@ -248,11 +351,17 @@ namespace SnapCardViewHook.Core.Capture
                    
                     SuppressFeatures(_matteFeatures, matteState);
                     ResetCameraInputs(matteState);
-                    result.MatteBlackRgba = RenderPixels(new CaptureColor(1), cancellation, result.MatteBlackRgba);
+                    RenderTo(_matteBlackTarget, new CaptureColor(1), cancellation);
+                    if (result.NeedsCpuProcessing) result.MatteBlackRgba = ReadCapturedPixels(result.MatteBlackRgba);
                     ResetCameraInputs(matteState);
-                    result.MatteWhiteRgba = RenderPixels(new CaptureColor(1, 1, 1, 1), cancellation, result.MatteWhiteRgba);
+                    RenderTo(_matteWhiteTarget, new CaptureColor(1, 1, 1, 1), cancellation);
+                    if (result.NeedsCpuProcessing) result.MatteWhiteRgba = ReadCapturedPixels(result.MatteWhiteRgba);
                 }
-                else { result.MatteBlackRgba = null; result.MatteWhiteRgba = null; }
+                cancellation.ThrowIfCancellationRequested();
+                if (!result.NeedsCpuProcessing) result.Data = ReadCapturedPixels(result.Data);
+                cancellation.ThrowIfCancellationRequested();
+                if (!_anchor.Initialized && !HasVisiblePixels(result.Data))
+                    throw new InvalidOperationException("The offscreen target is blank. No image was saved. Check the active card and renderer compatibility.");
             }
             _anchor.Initialized = true;
             return result;
@@ -260,6 +369,7 @@ namespace SnapCardViewHook.Core.Capture
 
         internal bool IsSelectedCardCurrent(bool checkReadiness = true)
         {
+            if (_options?.Subject == CaptureSubject.Deck) return IsSelectedDeckCurrent(checkReadiness);
             if (_resources == null || !Alive(_selectedDetails) ||
                 !Get<bool>(_behaviour, _selectedDetails, "isActiveAndEnabled") ||
                 !Get<bool>(_details, _selectedDetails, "IsVisible") ||
@@ -276,7 +386,7 @@ namespace SnapCardViewHook.Core.Capture
         public void Dispose()
         {
             try { _resources?.Dispose(); }
-            finally { _resources = null; }
+            finally { _resources = null; _gpuPass = null; }
         }
 
         private CaptureVector3[] CardFramingCorners(IntPtr card, IntPtr mainRenderer)
@@ -302,7 +412,7 @@ namespace SnapCardViewHook.Core.Capture
             return fallback.Corners().ToArray();
         }
 
-        private byte[] RenderPixels(CaptureColor background, CancellationToken cancellation, byte[] destination = null)
+        private void RenderTo(IntPtr destination, CaptureColor background, CancellationToken cancellation)
         {
             cancellation.ThrowIfCancellationRequested();
             Set(_camera, _captureCamera, "backgroundColor", "UnityEngine.Color", background);
@@ -312,17 +422,30 @@ namespace SnapCardViewHook.Core.Capture
            
             Call(_camera, _captureCamera, "SubmitRenderRequestsInternal", new[] { "System.Object" }, Il2CppArgument.Ref(_request));
             cancellation.ThrowIfCancellationRequested();
-            if (_readTarget != _target)
+            if (destination != _target)
             {
                 Set(_gl, IntPtr.Zero, "sRGBWrite", "System.Boolean", _writeSrgb);
                 Call(_graphics, IntPtr.Zero, "Blit", new[] { "UnityEngine.Texture", "UnityEngine.RenderTexture" },
-                    Il2CppArgument.Ref(_target), Il2CppArgument.Ref(_readTarget));
+                    Il2CppArgument.Ref(_target), Il2CppArgument.Ref(destination));
             }
+        }
+
+        private byte[] ReadCapturedPixels(byte[] destination)
+        {
             SetReference(_renderTexture, IntPtr.Zero, "active", "UnityEngine.RenderTexture", _readTarget);
+            if (_gpuPass != null)
+            {
+                Set(_gl, IntPtr.Zero, "sRGBWrite", "System.Boolean", false);
+                _gpuPass.Begin();
+                Call(_gl, IntPtr.Zero, "IssuePluginEvent", new[] { "System.IntPtr", "System.Int32" },
+                    Il2CppArgument.Value(CaptureGpuPass.RenderEvent), Il2CppArgument.Value(_gpuPass.EventId));
+                // The callback is ordered after the renders and before this synchronous readback.
+                // GPU capture needs no additional readbacks for the two matte textures.
+            }
             Call(_texture2D, _pixels, "ReadPixels", new[] { "UnityEngine.Rect", "System.Int32", "System.Int32", "System.Boolean" },
                 Il2CppArgument.Value(_readRect), Il2CppArgument.Value(0),
                 Il2CppArgument.Value(0), Il2CppArgument.Value(false));
-            
+            _gpuPass?.CheckCompleted();
             var read = _runtime.Method(_texture2D, "GetRawTextureData", false);
             if (destination == null) return _runtime.InvokeByteArray(read, _pixels, _pixelByteCount);
             _runtime.InvokeByteArrayInto(read, _pixels, destination);
@@ -415,7 +538,7 @@ namespace SnapCardViewHook.Core.Capture
             public int RendererIndex;
         }
 
-        private SourceCamera FindSourceCamera(IntPtr mainRenderer)
+        private SourceCamera FindSourceCamera(IntPtr mainRenderer, IntPtr[] deckRenderers = null)
         {
             var layer = Get<int>(_gameObject, GameOf(mainRenderer), "layer");
             var layerBit = 1 << layer;
@@ -426,6 +549,7 @@ namespace SnapCardViewHook.Core.Capture
             SourceCamera result = null;
             var highestRank = -1;
             var highestDepth = float.MinValue;
+            var deckCenters = deckRenderers?.Select(renderer => Get<CaptureBounds>(_renderer, renderer, "bounds").Center).ToArray();
             foreach (var camera in FindObjects(_camera))
             {
                 if (!Alive(camera)) continue;
@@ -439,6 +563,11 @@ namespace SnapCardViewHook.Core.Capture
                     var viewport = CallValue<CaptureVector3>(_camera, camera, "WorldToViewportPoint",
                         new[] { "UnityEngine.Vector3" }, Il2CppArgument.Value(center));
                     var inViewport = viewport.IsFinite && viewport.Z > 0 && viewport.X >= 0 && viewport.X <= 1 && viewport.Y >= 0 && viewport.Y <= 1;
+                    if (deckCenters != null && !deckCenters.All(point => InCameraViewport(camera, point)))
+                    {
+                        report.AppendLine("  Rejected: this camera does not show all 12 deck cards. Wait for the deck overview to finish opening.");
+                        continue;
+                    }
                     var depth = Get<float>(_camera, camera, "depth");
                     report.AppendLine("  Enabled=" + enabled + "; mask=0x" + mask.ToString("X8") + "; includes card layer=" + includesLayer +
                         "; viewport=" + FormatVector(viewport) + "; depth=" + depth.ToString("G4", CultureInfo.InvariantCulture));
@@ -626,13 +755,20 @@ namespace SnapCardViewHook.Core.Capture
             }
         }
 
-        private IntPtr NewRenderTexture(int width, int height, int depth, int format, CaptureStateScope resources)
+        private IntPtr NewRenderTexture(int width, int height, int depth, int format, CaptureStateScope resources,
+            bool randomWrite = false)
         {
             var target = NewUnityObject(_renderTexture, resources,
                 new[] { "System.Int32", "System.Int32", "System.Int32", "UnityEngine.RenderTextureFormat", "UnityEngine.RenderTextureReadWrite" },
                 Il2CppArgument.Value(width), Il2CppArgument.Value(height), Il2CppArgument.Value(depth),
-                Il2CppArgument.Value(format), Il2CppArgument.Value(0));
+                Il2CppArgument.Value(format), Il2CppArgument.Value(randomWrite ? 1 : 0)); // Linear output / default inputs.
             resources.RestoreWith(() => { if (Alive(target)) Call(_renderTexture, target, "Release", NoArgs); });
+            if (randomWrite)
+            {
+                // A linear RGBA8 UAV stores the shader's final bytes without another sRGB conversion.
+                Set(_renderTexture, target, "graphicsFormat", "UnityEngine.Experimental.Rendering.GraphicsFormat", Rgba8Unorm);
+                Set(_renderTexture, target, "enableRandomWrite", "System.Boolean", true);
+            }
             Set(_renderTexture, target, "antiAliasing", "System.Int32", 1);
             Set(_renderTexture, target, "useMipMap", "System.Boolean", false);
             Set(_renderTexture, target, "autoGenerateMips", "System.Boolean", false);

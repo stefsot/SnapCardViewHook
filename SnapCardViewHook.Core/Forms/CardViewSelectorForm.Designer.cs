@@ -40,11 +40,13 @@
             this.borderBox = new System.Windows.Forms.ComboBox();
             this.overrideCardCheckBox = new System.Windows.Forms.CheckBox();
             this.cardBox = new System.Windows.Forms.ComboBox();
+            this.onlyReplaceTargetCardCheckBox = new System.Windows.Forms.CheckBox();
+            this.replacementTargetCardBox = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.flipCardCheckBox = new System.Windows.Forms.CheckBox();
             this.overrideCardBackCheckBox = new System.Windows.Forms.CheckBox();
             this.cardBackBox = new System.Windows.Forms.ComboBox();
-            this.descriptionTextBox = new System.Windows.Forms.TextBox();
+            this.descriptionTextBox = new System.Windows.Forms.RichTextBox();
             this.overrideDescriptionCheckBox = new System.Windows.Forms.CheckBox();
             this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
             this.boardBox = new System.Windows.Forms.ComboBox();
@@ -53,22 +55,24 @@
             this.captureMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.capturePngMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.captureVideoMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.captureDeckPngMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.captureDeckVideoMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.overrideFactionCheckBox = new System.Windows.Forms.CheckBox();
             this.factionBox = new System.Windows.Forms.ComboBox();
             this.changeCostCheckBox = new System.Windows.Forms.CheckBox();
             this.changePowerCheckBox = new System.Windows.Forms.CheckBox();
             this.costNumeric = new System.Windows.Forms.NumericUpDown();
             this.powerNumeric = new System.Windows.Forms.NumericUpDown();
+            this.mainMenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).BeginInit();
-            this.mainMenuStrip.SuspendLayout();
             this.SuspendLayout();
             // 
             // surfaceEffectBox
             // 
             this.surfaceEffectBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.surfaceEffectBox.FormattingEnabled = true;
-            this.surfaceEffectBox.Location = new System.Drawing.Point(34, 138);
+            this.surfaceEffectBox.Location = new System.Drawing.Point(34, 155);
             this.surfaceEffectBox.Name = "surfaceEffectBox";
             this.surfaceEffectBox.Size = new System.Drawing.Size(216, 21);
             this.surfaceEffectBox.TabIndex = 0;
@@ -77,7 +81,7 @@
             // 
             this.overrideSurfaceEffectCheckBox.AutoSize = true;
             this.overrideSurfaceEffectCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideSurfaceEffectCheckBox.Location = new System.Drawing.Point(34, 112);
+            this.overrideSurfaceEffectCheckBox.Location = new System.Drawing.Point(34, 129);
             this.overrideSurfaceEffectCheckBox.Name = "overrideSurfaceEffectCheckBox";
             this.overrideSurfaceEffectCheckBox.Size = new System.Drawing.Size(160, 20);
             this.overrideSurfaceEffectCheckBox.TabIndex = 1;
@@ -88,7 +92,7 @@
             // 
             this.overrideRevealEffectCheckBox.AutoSize = true;
             this.overrideRevealEffectCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideRevealEffectCheckBox.Location = new System.Drawing.Point(34, 187);
+            this.overrideRevealEffectCheckBox.Location = new System.Drawing.Point(34, 197);
             this.overrideRevealEffectCheckBox.Name = "overrideRevealEffectCheckBox";
             this.overrideRevealEffectCheckBox.Size = new System.Drawing.Size(154, 20);
             this.overrideRevealEffectCheckBox.TabIndex = 3;
@@ -99,7 +103,7 @@
             // 
             this.revealEffectBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.revealEffectBox.FormattingEnabled = true;
-            this.revealEffectBox.Location = new System.Drawing.Point(34, 213);
+            this.revealEffectBox.Location = new System.Drawing.Point(34, 223);
             this.revealEffectBox.Name = "revealEffectBox";
             this.revealEffectBox.Size = new System.Drawing.Size(216, 21);
             this.revealEffectBox.TabIndex = 2;
@@ -108,7 +112,7 @@
             // 
             this.overrideVariantCheckBox.AutoSize = true;
             this.overrideVariantCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideVariantCheckBox.Location = new System.Drawing.Point(34, 261);
+            this.overrideVariantCheckBox.Location = new System.Drawing.Point(34, 265);
             this.overrideVariantCheckBox.Name = "overrideVariantCheckBox";
             this.overrideVariantCheckBox.Size = new System.Drawing.Size(121, 20);
             this.overrideVariantCheckBox.TabIndex = 5;
@@ -120,7 +124,7 @@
             this.variantBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
             this.variantBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.variantBox.FormattingEnabled = true;
-            this.variantBox.Location = new System.Drawing.Point(34, 308);
+            this.variantBox.Location = new System.Drawing.Point(34, 317);
             this.variantBox.Name = "variantBox";
             this.variantBox.Size = new System.Drawing.Size(216, 21);
             this.variantBox.TabIndex = 4;
@@ -131,7 +135,7 @@
             this.ensureVariantMatchCheckbox.Checked = true;
             this.ensureVariantMatchCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.ensureVariantMatchCheckbox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ensureVariantMatchCheckbox.Location = new System.Drawing.Point(34, 282);
+            this.ensureVariantMatchCheckbox.Location = new System.Drawing.Point(34, 291);
             this.ensureVariantMatchCheckbox.Name = "ensureVariantMatchCheckbox";
             this.ensureVariantMatchCheckbox.Size = new System.Drawing.Size(195, 20);
             this.ensureVariantMatchCheckbox.TabIndex = 6;
@@ -144,7 +148,7 @@
             this.force3DCheckbox.Checked = true;
             this.force3DCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.force3DCheckbox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.force3DCheckbox.Location = new System.Drawing.Point(34, 573);
+            this.force3DCheckbox.Location = new System.Drawing.Point(34, 589);
             this.force3DCheckbox.Name = "force3DCheckbox";
             this.force3DCheckbox.Size = new System.Drawing.Size(111, 20);
             this.force3DCheckbox.TabIndex = 7;
@@ -155,7 +159,7 @@
             // 
             this.overrideBorderCheckBox.AutoSize = true;
             this.overrideBorderCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideBorderCheckBox.Location = new System.Drawing.Point(34, 366);
+            this.overrideBorderCheckBox.Location = new System.Drawing.Point(34, 385);
             this.overrideBorderCheckBox.Name = "overrideBorderCheckBox";
             this.overrideBorderCheckBox.Size = new System.Drawing.Size(121, 20);
             this.overrideBorderCheckBox.TabIndex = 9;
@@ -166,7 +170,7 @@
             // 
             this.borderBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.borderBox.FormattingEnabled = true;
-            this.borderBox.Location = new System.Drawing.Point(34, 392);
+            this.borderBox.Location = new System.Drawing.Point(34, 411);
             this.borderBox.Name = "borderBox";
             this.borderBox.Size = new System.Drawing.Size(216, 21);
             this.borderBox.TabIndex = 8;
@@ -177,25 +181,59 @@
             this.overrideCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.overrideCardCheckBox.Location = new System.Drawing.Point(34, 35);
             this.overrideCardCheckBox.Name = "overrideCardCheckBox";
-            this.overrideCardCheckBox.Size = new System.Drawing.Size(108, 20);
+            this.overrideCardCheckBox.Size = new System.Drawing.Size(140, 20);
             this.overrideCardCheckBox.TabIndex = 11;
-            this.overrideCardCheckBox.Text = "Replace card";
+            this.overrideCardCheckBox.Text = "Replace cards with";
             this.overrideCardCheckBox.UseVisualStyleBackColor = true;
             // 
             // cardBox
             // 
-            this.cardBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cardBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            this.cardBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cardBox.FormattingEnabled = true;
             this.cardBox.Location = new System.Drawing.Point(34, 61);
             this.cardBox.Name = "cardBox";
             this.cardBox.Size = new System.Drawing.Size(216, 21);
             this.cardBox.TabIndex = 10;
+            this.cardBox.SelectedIndexChanged += new System.EventHandler(this.replacementCard_Changed);
+            this.cardBox.TextChanged += new System.EventHandler(this.replacementCard_Changed);
+            this.cardBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.cardSelection_KeyDown);
+            this.cardBox.Validating += new System.ComponentModel.CancelEventHandler(this.cardSelection_Validating);
+            //
+            // onlyReplaceTargetCardCheckBox
+            //
+            this.onlyReplaceTargetCardCheckBox.AutoSize = true;
+            this.onlyReplaceTargetCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.onlyReplaceTargetCardCheckBox.Location = new System.Drawing.Point(34, 89);
+            this.onlyReplaceTargetCardCheckBox.Name = "onlyReplaceTargetCardCheckBox";
+            this.onlyReplaceTargetCardCheckBox.Size = new System.Drawing.Size(83, 17);
+            this.onlyReplaceTargetCardCheckBox.TabIndex = 28;
+            this.onlyReplaceTargetCardCheckBox.Text = "replace only";
+            this.onlyReplaceTargetCardCheckBox.UseVisualStyleBackColor = true;
+            this.onlyReplaceTargetCardCheckBox.CheckedChanged += new System.EventHandler(this.replacementTarget_Changed);
+            //
+            // replacementTargetCardBox
+            //
+            this.replacementTargetCardBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            this.replacementTargetCardBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.replacementTargetCardBox.DropDownWidth = 216;
+            this.replacementTargetCardBox.Enabled = false;
+            this.replacementTargetCardBox.FormattingEnabled = true;
+            this.replacementTargetCardBox.Location = new System.Drawing.Point(126, 87);
+            this.replacementTargetCardBox.Name = "replacementTargetCardBox";
+            this.replacementTargetCardBox.Size = new System.Drawing.Size(124, 21);
+            this.replacementTargetCardBox.Sorted = true;
+            this.replacementTargetCardBox.TabIndex = 29;
+            this.replacementTargetCardBox.SelectedIndexChanged += new System.EventHandler(this.replacementTarget_Changed);
+            this.replacementTargetCardBox.TextChanged += new System.EventHandler(this.replacementTarget_Changed);
+            this.replacementTargetCardBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.cardSelection_KeyDown);
+            this.replacementTargetCardBox.Validating += new System.ComponentModel.CancelEventHandler(this.cardSelection_Validating);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
             this.label1.ForeColor = System.Drawing.Color.Red;
-            this.label1.Location = new System.Drawing.Point(16, 332);
+            this.label1.Location = new System.Drawing.Point(16, 343);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(261, 13);
             this.label1.TabIndex = 12;
@@ -205,7 +243,7 @@
             // 
             this.flipCardCheckBox.AutoSize = true;
             this.flipCardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.flipCardCheckBox.Location = new System.Drawing.Point(151, 573);
+            this.flipCardCheckBox.Location = new System.Drawing.Point(151, 589);
             this.flipCardCheckBox.Name = "flipCardCheckBox";
             this.flipCardCheckBox.Size = new System.Drawing.Size(78, 20);
             this.flipCardCheckBox.TabIndex = 13;
@@ -217,7 +255,7 @@
             // 
             this.overrideCardBackCheckBox.AutoSize = true;
             this.overrideCardBackCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideCardBackCheckBox.Location = new System.Drawing.Point(34, 436);
+            this.overrideCardBackCheckBox.Location = new System.Drawing.Point(34, 453);
             this.overrideCardBackCheckBox.Name = "overrideCardBackCheckBox";
             this.overrideCardBackCheckBox.Size = new System.Drawing.Size(141, 20);
             this.overrideCardBackCheckBox.TabIndex = 15;
@@ -228,18 +266,19 @@
             // 
             this.cardBackBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cardBackBox.FormattingEnabled = true;
-            this.cardBackBox.Location = new System.Drawing.Point(34, 462);
+            this.cardBackBox.Location = new System.Drawing.Point(34, 479);
             this.cardBackBox.Name = "cardBackBox";
             this.cardBackBox.Size = new System.Drawing.Size(216, 21);
             this.cardBackBox.TabIndex = 14;
             // 
             // descriptionTextBox
             // 
-            this.descriptionTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.descriptionTextBox.Location = new System.Drawing.Point(299, 138);
-            this.descriptionTextBox.Multiline = true;
+            this.descriptionTextBox.DetectUrls = false;
+            this.descriptionTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.descriptionTextBox.Location = new System.Drawing.Point(299, 155);
             this.descriptionTextBox.Name = "descriptionTextBox";
-            this.descriptionTextBox.Size = new System.Drawing.Size(216, 96);
+            this.descriptionTextBox.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
+            this.descriptionTextBox.Size = new System.Drawing.Size(216, 89);
             this.descriptionTextBox.TabIndex = 16;
             this.descriptionTextBox.Text = "<b>Ongoing:</b> Test <color=#ff2c2c>text</color> change.";
             this.descriptionTextBox.TextChanged += new System.EventHandler(this.descriptionTextBox_TextChanged);
@@ -248,7 +287,7 @@
             // 
             this.overrideDescriptionCheckBox.AutoSize = true;
             this.overrideDescriptionCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideDescriptionCheckBox.Location = new System.Drawing.Point(299, 112);
+            this.overrideDescriptionCheckBox.Location = new System.Drawing.Point(299, 129);
             this.overrideDescriptionCheckBox.Name = "overrideDescriptionCheckBox";
             this.overrideDescriptionCheckBox.Size = new System.Drawing.Size(131, 20);
             this.overrideDescriptionCheckBox.TabIndex = 17;
@@ -260,7 +299,7 @@
             // 
             this.overrideBoardCheckBox.AutoSize = true;
             this.overrideBoardCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 261);
+            this.overrideBoardCheckBox.Location = new System.Drawing.Point(299, 265);
             this.overrideBoardCheckBox.Name = "overrideBoardCheckBox";
             this.overrideBoardCheckBox.Size = new System.Drawing.Size(155, 20);
             this.overrideBoardCheckBox.TabIndex = 18;
@@ -271,14 +310,14 @@
             // 
             this.boardBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.boardBox.FormattingEnabled = true;
-            this.boardBox.Location = new System.Drawing.Point(299, 287);
+            this.boardBox.Location = new System.Drawing.Point(299, 291);
             this.boardBox.Name = "boardBox";
             this.boardBox.Size = new System.Drawing.Size(216, 21);
             this.boardBox.TabIndex = 19;
             // 
             // showCatalogButton
             // 
-            this.showCatalogButton.Location = new System.Drawing.Point(403, 570);
+            this.showCatalogButton.Location = new System.Drawing.Point(403, 587);
             this.showCatalogButton.Name = "showCatalogButton";
             this.showCatalogButton.Size = new System.Drawing.Size(127, 23);
             this.showCatalogButton.TabIndex = 20;
@@ -299,27 +338,46 @@
             //
             this.captureMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.capturePngMenuItem,
-            this.captureVideoMenuItem});
+            this.captureVideoMenuItem,
+            this.captureDeckPngMenuItem,
+            this.captureDeckVideoMenuItem});
             this.captureMenuItem.Name = "captureMenuItem";
+            this.captureMenuItem.Size = new System.Drawing.Size(61, 20);
             this.captureMenuItem.Text = "&Capture";
             //
             // capturePngMenuItem
             //
             this.capturePngMenuItem.Name = "capturePngMenuItem";
+            this.capturePngMenuItem.Size = new System.Drawing.Size(184, 22);
             this.capturePngMenuItem.Text = "&PNG capture...";
             this.capturePngMenuItem.Click += new System.EventHandler(this.capturePngMenuItem_Click);
             //
             // captureVideoMenuItem
             //
             this.captureVideoMenuItem.Name = "captureVideoMenuItem";
+            this.captureVideoMenuItem.Size = new System.Drawing.Size(184, 22);
             this.captureVideoMenuItem.Text = "&Video capture...";
             this.captureVideoMenuItem.Click += new System.EventHandler(this.captureVideoMenuItem_Click);
             // 
+            // captureDeckPngMenuItem
+            //
+            this.captureDeckPngMenuItem.Name = "captureDeckPngMenuItem";
+            this.captureDeckPngMenuItem.Size = new System.Drawing.Size(184, 22);
+            this.captureDeckPngMenuItem.Text = "Deck PNG capture...";
+            this.captureDeckPngMenuItem.Click += new System.EventHandler(this.captureDeckPngMenuItem_Click);
+            //
+            // captureDeckVideoMenuItem
+            //
+            this.captureDeckVideoMenuItem.Name = "captureDeckVideoMenuItem";
+            this.captureDeckVideoMenuItem.Size = new System.Drawing.Size(184, 22);
+            this.captureDeckVideoMenuItem.Text = "Deck video capture...";
+            this.captureDeckVideoMenuItem.Click += new System.EventHandler(this.captureDeckVideoMenuItem_Click);
+            //
             // overrideFactionCheckBox
             // 
             this.overrideFactionCheckBox.AutoSize = true;
             this.overrideFactionCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.overrideFactionCheckBox.Location = new System.Drawing.Point(34, 504);
+            this.overrideFactionCheckBox.Location = new System.Drawing.Point(34, 521);
             this.overrideFactionCheckBox.Name = "overrideFactionCheckBox";
             this.overrideFactionCheckBox.Size = new System.Drawing.Size(120, 20);
             this.overrideFactionCheckBox.TabIndex = 22;
@@ -330,7 +388,7 @@
             // 
             this.factionBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.factionBox.FormattingEnabled = true;
-            this.factionBox.Location = new System.Drawing.Point(34, 530);
+            this.factionBox.Location = new System.Drawing.Point(34, 547);
             this.factionBox.Name = "factionBox";
             this.factionBox.Size = new System.Drawing.Size(216, 21);
             this.factionBox.TabIndex = 21;
@@ -359,7 +417,7 @@
             // 
             // costNumeric
             // 
-            this.costNumeric.Location = new System.Drawing.Point(299, 62);
+            this.costNumeric.Location = new System.Drawing.Point(299, 61);
             this.costNumeric.Maximum = new decimal(new int[] {
             99999,
             0,
@@ -376,7 +434,7 @@
             // 
             // powerNumeric
             // 
-            this.powerNumeric.Location = new System.Drawing.Point(414, 62);
+            this.powerNumeric.Location = new System.Drawing.Point(414, 61);
             this.powerNumeric.Maximum = new decimal(new int[] {
             99999,
             0,
@@ -395,7 +453,9 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(542, 606);
+            this.ClientSize = new System.Drawing.Size(542, 622);
+            this.Controls.Add(this.replacementTargetCardBox);
+            this.Controls.Add(this.onlyReplaceTargetCardCheckBox);
             this.Controls.Add(this.powerNumeric);
             this.Controls.Add(this.costNumeric);
             this.Controls.Add(this.changePowerCheckBox);
@@ -432,10 +492,10 @@
             this.Text = "Card view selector";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CardViewSelectorForm_FormClosing);
             this.Load += new System.EventHandler(this.CardViewSelectorForm_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).EndInit();
             this.mainMenuStrip.ResumeLayout(false);
             this.mainMenuStrip.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -455,11 +515,13 @@
         private System.Windows.Forms.ComboBox borderBox;
         private System.Windows.Forms.CheckBox overrideCardCheckBox;
         private System.Windows.Forms.ComboBox cardBox;
+        private System.Windows.Forms.CheckBox onlyReplaceTargetCardCheckBox;
+        private System.Windows.Forms.ComboBox replacementTargetCardBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox flipCardCheckBox;
         private System.Windows.Forms.CheckBox overrideCardBackCheckBox;
         private System.Windows.Forms.ComboBox cardBackBox;
-        private System.Windows.Forms.TextBox descriptionTextBox;
+        private System.Windows.Forms.RichTextBox descriptionTextBox;
         private System.Windows.Forms.CheckBox overrideDescriptionCheckBox;
         private System.Windows.Forms.CheckBox overrideBoardCheckBox;
         private System.Windows.Forms.ComboBox boardBox;
@@ -468,6 +530,8 @@
         private System.Windows.Forms.ToolStripMenuItem captureMenuItem;
         private System.Windows.Forms.ToolStripMenuItem capturePngMenuItem;
         private System.Windows.Forms.ToolStripMenuItem captureVideoMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem captureDeckPngMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem captureDeckVideoMenuItem;
         private System.Windows.Forms.CheckBox overrideFactionCheckBox;
         private System.Windows.Forms.ComboBox factionBox;
         private System.Windows.Forms.CheckBox changeCostCheckBox;

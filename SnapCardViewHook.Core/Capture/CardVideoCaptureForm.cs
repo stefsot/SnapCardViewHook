@@ -9,6 +9,7 @@ namespace SnapCardViewHook.Core.Capture
 {
     internal sealed class CardVideoCaptureForm : Form
     {
+        private readonly CaptureSubject _subject;
         private readonly NumericUpDown _width = new NumericUpDown { Minimum = 64, Maximum = 4096, Value = 800, Increment = 64 };
         private readonly NumericUpDown _height = new NumericUpDown { Minimum = 64, Maximum = 4096, Value = 1200, Increment = 64 };
         private readonly NumericUpDown _padding = new NumericUpDown { Minimum = 0, Maximum = 100, Value = 0 };
@@ -34,7 +35,8 @@ namespace SnapCardViewHook.Core.Capture
 
         public CardVideoCaptureForm(CardCaptureOptions frames)
         {
-            Text = "Record card video";
+            _subject = frames.Subject;
+            Text = _subject == CaptureSubject.Deck ? "Record deck video" : "Record card video";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false; MinimizeBox = false;
             StartPosition = FormStartPosition.CenterParent;
@@ -45,7 +47,9 @@ namespace SnapCardViewHook.Core.Capture
             _transparent.Checked = frames.TransparentBackground; _shadow.Checked = frames.IncludeShadow;
             Add(new Label
             {
-                Text = "Keep the same card's details open in the game, each frame is rendered in isolation.", AutoSize = false
+                Text = _subject == CaptureSubject.Deck
+                    ? "Keep the same 12-card deck overview open in the game while recording."
+                    : "Keep the same card's details open in the game, each frame is rendered in isolation.", AutoSize = false
             }, 16, 14, 558, 40);
             Add(new Label { Text = "Width", AutoSize = true }, 16, 68, 45, 20);
             Add(_width, 64, 64, 96, 24);
@@ -98,6 +102,7 @@ namespace SnapCardViewHook.Core.Capture
                 if (_preview != null && !_preview.IsDisposed) { _preview.Activate(); return; }
                 _preview = new CardLivePreviewForm(new CardCaptureOptions
                 {
+                    Subject = _subject,
                     Width = (int)_width.Value, Height = (int)_height.Value, PaddingPercent = (float)_padding.Value,
                     IncludeShadow = _shadow.Checked, TransparentBackground = true
                 }, (int)_fps.Value);
@@ -120,11 +125,17 @@ namespace SnapCardViewHook.Core.Capture
 
         private void UpdateMemoryEstimate()
         {
-            var megabytes = (double)(_width.Value * _height.Value * 4 * (_transparent.Checked ? 3 : 1) * _fps.Value * _duration.Value) / (1024 * 1024);
+            var megabytes = (double)(_width.Value * _height.Value * 4 * _fps.Value * _duration.Value) / (1024 * 1024);
+            var fallbackMegabytes = megabytes * (_transparent.Checked ? 3 : 1);
             var exceedsLimit = megabytes > (double)_ramLimit.Value;
-            _memoryEstimate.Text = $"Estimated frame RAM at target FPS: {megabytes:N0} MB.\n" +
-                (exceedsLimit ? "Above the RAM limit: capture will stop early and encode. Raise the limit if safe." : "Encoding starts after capture. Frames stay in RAM until consumed by the encoder.");
-            _memoryEstimate.ForeColor = exceedsLimit ? Color.DarkRed : SystemColors.ControlText;
+            var fallbackExceedsLimit = fallbackMegabytes > (double)_ramLimit.Value;
+            _memoryEstimate.Text = (_transparent.Checked
+                ? $"Estimated frame RAM: {megabytes:N0} MB with GPU; {fallbackMegabytes:N0} MB with CPU fallback.\n"
+                : $"Estimated frame RAM at target FPS: {megabytes:N0} MB.\n") +
+                (exceedsLimit ? "Above the RAM limit: capture will stop early and encode." :
+                fallbackExceedsLimit ? "CPU fallback would reach the RAM limit and stop capture early." :
+                "Encoding starts after capture. Frames stay in RAM until consumed by the encoder.");
+            _memoryEstimate.ForeColor = fallbackExceedsLimit ? Color.DarkRed : SystemColors.ControlText;
         }
 
         private void BrowseClicked(object sender, EventArgs args)
@@ -145,8 +156,8 @@ namespace SnapCardViewHook.Core.Capture
             if (_stop != null) return;
             using (var dialog = new SaveFileDialog
             {
-                Title = "Save isolated card video", Filter = "ProRes 4444 movie (*.mov)|*.mov", DefaultExt = "mov", AddExtension = true,
-                FileName = "Card-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + (_transparent.Checked ? "-premultiplied" : "") + ".mov",
+                Title = "Save " + _subject.ToString().ToLowerInvariant() + " video", Filter = "ProRes 4444 movie (*.mov)|*.mov", DefaultExt = "mov", AddExtension = true,
+                FileName = _subject + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + (_transparent.Checked ? "-premultiplied" : "") + ".mov",
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
                 OverwritePrompt = true, CheckPathExists = true
             })
@@ -156,6 +167,7 @@ namespace SnapCardViewHook.Core.Capture
                 {
                     Frames = new CardCaptureOptions
                     {
+                        Subject = _subject,
                         Width = (int)_width.Value, Height = (int)_height.Value, PaddingPercent = (float)_padding.Value,
                         TransparentBackground = _transparent.Checked, IncludeShadow = _shadow.Checked, OutputPath = dialog.FileName
                     },
@@ -168,7 +180,8 @@ namespace SnapCardViewHook.Core.Capture
                     _closeAfterStop = false;
                     _encoding = false;
                     SetWorking(true);
-                    _status.Text = "Waiting for the first game frame... Keep the card-details view open";
+                    _status.Text = "Waiting for the first game frame... Keep the " +
+                        (_subject == CaptureSubject.Deck ? "12-card deck overview" : "card-details view") + " open.";
                     var acceptProgress = true;
                     var progress = new Progress<CardVideoProgress>(value =>
                     {
@@ -211,7 +224,7 @@ namespace SnapCardViewHook.Core.Capture
                         acceptProgress = false;
                         if (IsDisposed) return;
                         _status.Text = "Recording failed. Existing files were not overwritten";
-                        CardCaptureForm.ShowCaptureError(this, error);
+                        CardCaptureForm.ShowCaptureError(this, error, _subject + " capture failed");
                     }
                     finally
                     {

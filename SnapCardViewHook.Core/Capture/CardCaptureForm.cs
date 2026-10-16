@@ -9,6 +9,7 @@ namespace SnapCardViewHook.Core.Capture
 {
     internal sealed class CardCaptureForm : Form
     {
+        private readonly CaptureSubject _subject;
         private readonly NumericUpDown _width = new NumericUpDown { Minimum = 64, Maximum = 4096, Value = 800, Increment = 64 };
         private readonly NumericUpDown _height = new NumericUpDown { Minimum = 64, Maximum = 4096, Value = 800, Increment = 64 };
         private readonly NumericUpDown _padding = new NumericUpDown { Minimum = 0, Maximum = 100, Value = 0 };
@@ -21,16 +22,21 @@ namespace SnapCardViewHook.Core.Capture
         private CancellationTokenSource _cancellation;
         private string _savedPath;
 
-        public CardCaptureForm()
+        public CardCaptureForm(CaptureSubject subject = CaptureSubject.Card)
         {
-            Text = "Capture card";
+            _subject = subject;
+            var deck = subject == CaptureSubject.Deck;
+            Text = deck ? "Capture deck" : "Capture card";
+            if (deck) { _width.Value = 2400; _height.Value = 1600; _padding.Value = 3; }
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false; MinimizeBox = false;
             StartPosition = FormStartPosition.CenterParent;
             AutoScaleDimensions = new SizeF(6, 13);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(510, 326);
-            Add(new Label { Text = "Open the card's details in the game and wait for its effects to load.\nThis renders the card into a separate image; it is not a screenshot.", AutoSize = false }, 16, 14, 478, 40);
+            Add(new Label { Text = deck
+                ? "Open the full 12-card deck overview and wait for every card to load.\nCapture keeps the game's card layout and spacing."
+                : "Open the card's details in the game and wait for its effects to load.\nThis renders the card into a separate image; it is not a screenshot.", AutoSize = false }, 16, 14, 478, 40);
             Add(new Label { Text = "Width", AutoSize = true }, 16, 68, 45, 20);
             Add(_width, 64, 64, 96, 24);
             Add(new Label { Text = "Height", AutoSize = true }, 190, 68, 45, 20);
@@ -58,6 +64,7 @@ namespace SnapCardViewHook.Core.Capture
 
         internal CardCaptureOptions GetFrameOptions() => new CardCaptureOptions
         {
+            Subject = _subject,
             Width = (int)_width.Value, Height = (int)_height.Value, PaddingPercent = (float)_padding.Value,
             TransparentBackground = _transparent.Checked, IncludeShadow = _shadow.Checked
         };
@@ -67,8 +74,8 @@ namespace SnapCardViewHook.Core.Capture
             if (_cancellation != null) return;
             using (var dialog = new SaveFileDialog
             {
-                Title = "Save isolated card image", Filter = "PNG image (*.png)|*.png", DefaultExt = "png", AddExtension = true,
-                FileName = "Card-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + ".png",
+                Title = "Save " + _subject.ToString().ToLowerInvariant() + " image", Filter = "PNG image (*.png)|*.png", DefaultExt = "png", AddExtension = true,
+                FileName = _subject + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + ".png",
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
                 OverwritePrompt = true, CheckPathExists = true
             })
@@ -82,13 +89,13 @@ namespace SnapCardViewHook.Core.Capture
                     SetWorking(true);
                     _status.Text = options.TransparentBackground
                         ? "Waiting for the game, rendering color and transparency passes, then saving PNG..."
-                        : "Waiting for the game, rendering the isolated card, then saving PNG...";
+                        : "Waiting for the game, rendering the selected " + _subject.ToString().ToLowerInvariant() + ", then saving PNG...";
                     try
                     {
                         var result = await CardImageCapture.CaptureAsync(options, cancellation.Token);
                         if (IsDisposed) return;
                         _savedPath = Path.GetFullPath(options.OutputPath);
-                        _status.Text = $"Saved {result.Width} x {result.Height}; {result.RendererCount} card renderers.\n{_savedPath}";
+                        _status.Text = $"Saved {result.Width} x {result.Height}; {result.CardCount} card(s), {result.RendererCount} renderers.\n{_savedPath}";
                         _open.Enabled = true;
                     }
                     catch (OperationCanceledException)
@@ -99,7 +106,7 @@ namespace SnapCardViewHook.Core.Capture
                     {
                         if (IsDisposed) return;
                         _status.Text = "Capture failed. No existing file was overwritten.";
-                        ShowCaptureError(this, e);
+                        ShowCaptureError(this, e, _subject + " capture failed");
                     }
                     finally
                     {

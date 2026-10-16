@@ -47,36 +47,46 @@ namespace SnapCardViewHook.Core.Capture
             }
         }
 
-        public static void PrepareVideoPixels(CapturedCardPixels pixels, bool transparent, CancellationToken cancellation)
+        // Called by image/video workers. GPU frames are already in their requested format.
+        public static void PreparePixels(CapturedCardPixels pixels, CancellationToken cancellation)
         {
-            if (!transparent)
-            {
-                PreparePixels(pixels, false, cancellation);
-                return;
-            }
-            CaptureAlphaReconstruction.ApplyPremultipliedVideo(pixels.Rgba, pixels.MatteBlackRgba,
-                pixels.MatteWhiteRgba, pixels.LinearColorSpace, cancellation);
-            pixels.MatteBlackRgba = null;
-            pixels.MatteWhiteRgba = null;
-        }
+            if (pixels == null) throw new ArgumentNullException(nameof(pixels));
+            cancellation.ThrowIfCancellationRequested();
+            if (!pixels.NeedsCpuProcessing) return;
+            if (pixels.Width <= 0 || pixels.Height <= 0 ||
+                pixels.Data?.Length != checked(pixels.Width * pixels.Height * 4) ||
+                !Enum.IsDefined(typeof(CapturePixelLayout), pixels.Layout))
+                throw new ArgumentException("Invalid CPU capture frame.", nameof(pixels));
 
-        public static void PreparePixels(CapturedCardPixels pixels, bool transparent, CancellationToken cancellation)
-        {
+            var transparent = pixels.MatteBlackRgba != null || pixels.MatteWhiteRgba != null;
             if (transparent)
             {
-                CaptureAlphaReconstruction.Apply(pixels.Rgba, pixels.MatteBlackRgba,
-                    pixels.MatteWhiteRgba, pixels.LinearColorSpace, cancellation);
-                pixels.MatteBlackRgba = null;
-                pixels.MatteWhiteRgba = null;
+                if (pixels.Layout == CapturePixelLayout.StraightBgra)
+                    CaptureAlphaReconstruction.Apply(pixels.Data, pixels.MatteBlackRgba,
+                        pixels.MatteWhiteRgba, pixels.LinearColorSpace, cancellation);
+                else
+                    CaptureAlphaReconstruction.ApplyPremultipliedVideo(pixels.Data, pixels.MatteBlackRgba,
+                        pixels.MatteWhiteRgba, pixels.LinearColorSpace, cancellation);
             }
-            else
+
+            var swapRedBlue = pixels.Layout != CapturePixelLayout.PremultipliedRgba;
+            if (!transparent || swapRedBlue)
             {
-                for (var i = 3; i < pixels.Rgba.Length; i += 4)
+                for (var i = 0; i < pixels.Data.Length; i += 4)
                 {
-                    if ((i & 16383) == 3) cancellation.ThrowIfCancellationRequested();
-                    pixels.Rgba[i] = 255;
+                    if ((i & 16383) == 0) cancellation.ThrowIfCancellationRequested();
+                    if (!transparent) pixels.Data[i + 3] = 255;
+                    if (swapRedBlue)
+                    {
+                        var red = pixels.Data[i];
+                        pixels.Data[i] = pixels.Data[i + 2];
+                        pixels.Data[i + 2] = red;
+                    }
                 }
             }
+            cancellation.ThrowIfCancellationRequested();
+            pixels.MatteBlackRgba = pixels.MatteWhiteRgba = null;
+            pixels.NeedsCpuProcessing = false;
         }
     }
 }

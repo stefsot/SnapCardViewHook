@@ -13,7 +13,7 @@ namespace SnapCardViewHook.Core.Capture
         public int DurationSeconds { get; set; } = 10;
         public int ProResQuantizer { get; set; } = 4; // 0 = automatic, lower positive values = higher quality.
         public int RamLimitMegabytes { get; set; } = 2048;
-        public long BytesPerCapturedFrame => checked((long)Frames.Width * Frames.Height * 4 * (Frames.TransparentBackground ? 3 : 1));
+        public long BytesPerPixelBuffer => checked((long)Frames.Width * Frames.Height * 4);
 
         public CardVideoOptions Snapshot()
         {
@@ -25,7 +25,7 @@ namespace SnapCardViewHook.Core.Capture
                 throw new ArgumentOutOfRangeException(nameof(DurationSeconds), "Video duration must be between 1 and 600 seconds.");
             if (ProResQuantizer < 0 || ProResQuantizer > 32)
                 throw new ArgumentOutOfRangeException(nameof(ProResQuantizer), "ProRes quality must be 0 (auto) or 1-32 (lower is higher quality).");
-            if (RamLimitMegabytes < 64 || RamLimitMegabytes > 65536 || BytesPerCapturedFrame > RamLimitMegabytes * 1024L * 1024)
+            if (RamLimitMegabytes < 64 || RamLimitMegabytes > 65536 || BytesPerPixelBuffer > RamLimitMegabytes * 1024L * 1024)
                 throw new ArgumentOutOfRangeException(nameof(RamLimitMegabytes), "Choose a RAM limit between 64 and 65536 MB, large enough for at least one frame.");
             if (string.IsNullOrWhiteSpace(FfmpegPath))
                 throw new ArgumentException("Browse to a local ffmpeg.exe. Nothing is downloaded automatically.");

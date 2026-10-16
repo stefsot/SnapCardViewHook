@@ -22,14 +22,15 @@ namespace SnapCardViewHook.Core.Capture
                         var pixels = await CardCaptureDispatcher.CaptureAsync(snapshot, null, token).ConfigureAwait(false);
                         await Task.Run(() =>
                         {
-                            CardCaptureDispatcher.PreparePixels(pixels, snapshot.TransparentBackground, token);
+                            CardCaptureDispatcher.PreparePixels(pixels, token);
                             CapturePngWriter.Write(pixels, snapshot, token);
                         }, token).ConfigureAwait(false);
                         return pixels;
                     }
                     catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellation.IsCancellationRequested)
                     {
-                        throw new TimeoutException("Capture timed out. Keep the game running with the card-details view open, then try again.");
+                        throw new TimeoutException("Capture timed out. Keep the game running with the " +
+                            (snapshot.Subject == CaptureSubject.Deck ? "12-card deck overview" : "card-details view") + " open, then try again.");
                     }
                 }
             }

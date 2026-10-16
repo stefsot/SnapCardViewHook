@@ -120,12 +120,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CaptureGpuNative.h" />
+    <ClInclude Include="CaptureGpuPass.h" />
     <ClInclude Include="HookHelper.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="CaptureGpuPass.cpp" />
+    <ClCompile Include="CaptureGpuNative.cpp">
+      <CompileAsManaged>false</CompileAsManaged>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="HookHelper.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -133,6 +142,19 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="CaptureAlpha.hlsl">
+      <ShaderType>Compute</ShaderType>
+      <ShaderModel>5.0</ShaderModel>
+      <EntryPointName>Reconstruct</EntryPointName>
+      <HeaderFileOutput>$(IntDir)CaptureAlphaBytecode.h</HeaderFileOutput>
+      <VariableName>CaptureAlphaBytecode</VariableName>
+      <ObjectFileOutput>$(IntDir)CaptureAlpha.cso</ObjectFileOutput>
+      <DisableOptimizations>false</DisableOptimizations>
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <AdditionalOptions>/O3 %(AdditionalOptions)</AdditionalOptions>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc" />

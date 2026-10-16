@@ -7,6 +7,7 @@
 #include "Injector.h"
 #include "InjectorData.h"
 #include <vcclr.h>
+#include <mscoree.h>
 
 //#using <System.Dll>
 //#using <System.XML.Dll>
@@ -14,10 +15,120 @@
 #pragma comment(lib, "User32.lib")
 
 using namespace ManagedInjector;
+using namespace System;
+using namespace System::IO;
+using namespace System::Reflection;
+using namespace System::Runtime::InteropServices;
+using namespace System::Threading;
 
 static unsigned int WM_GOBABYGO = ::RegisterWindowMessage(L"Net_Injector_wmsg");
 static HHOOK _messageHookHandle;
 
+AppDomain^ Injector::GetDefaultAppDomain()
+{
+	// An unmanaged callback may enter through a payload domain. Anchor the registry
+	// in the current CLR's default domain, independently of the calling DLL/domain.
+	auto runtimePointer = RuntimeEnvironment::GetRuntimeInterfaceAsIntPtr(
+		Guid("CB2F6723-AB3A-11D2-9C40-00C04FA30A3E"),
+		Guid("CB2F6722-AB3A-11D2-9C40-00C04FA30A3E"));
+	auto runtimeHost = static_cast<ICorRuntimeHost*>(runtimePointer.ToPointer());
+	IUnknown* domainUnknown = nullptr;
+	try
+	{
+		Marshal::ThrowExceptionForHR(runtimeHost->GetDefaultDomain(&domainUnknown));
+		return safe_cast<AppDomain^>(Marshal::GetObjectForIUnknown(IntPtr(domainUnknown)));
+	}
+	finally
+	{
+		if (domainUnknown != nullptr) domainUnknown->Release();
+		runtimeHost->Release();
+	}
+}
+
+void Injector::InvokeEntryPoint()
+{
+	auto domain = AppDomain::CurrentDomain;
+	auto request = safe_cast<array<String^>^>(domain->GetData(RequestDataKey));
+	try
+	{
+		auto assembly = safe_cast<Assembly^>(domain->GetData(EntryAssemblyDataKey));
+		if (assembly == nullptr)
+		{
+			assembly = Assembly::LoadFrom(request[0]);
+			domain->SetData(EntryAssemblyDataKey, assembly);
+		}
+		auto type = assembly->GetType(request[1], true);
+		auto method = type->GetMethod(request[2], BindingFlags::Public | BindingFlags::Static,
+			nullptr, gcnew array<Type^> { String::typeid }, nullptr);
+		if (method == nullptr)
+			throw gcnew MissingMethodException(request[1], request[2] + "(String)");
+		method->Invoke(nullptr, gcnew array<Object^> { request[3] });
+	}
+	catch (Exception^ error)
+	{
+		// Pass error text back without loading payload exception types in the host.
+		domain->SetData(ErrorDataKey, error->ToString());
+	}
+}
+
+void Injector::LoadIntoAppDomain(InjectorData^ injectorData)
+{
+	if (injectorData == nullptr)
+		throw gcnew ArgumentNullException("injectorData");
+	auto assemblyPath = Path::GetFullPath(injectorData->AssemblyName);
+	auto assemblyName = AssemblyName::GetAssemblyName(assemblyPath)->Name;
+	auto host = GetDefaultAppDomain();
+	auto domainKey = DomainRegistryKeyPrefix + assemblyName->ToUpperInvariant();
+
+	// A named mutex also coordinates different NetInjector copies and AppDomains.
+	auto gate = gcnew Mutex(false, DomainMutexNamePrefix +
+		System::Diagnostics::Process::GetCurrentProcess()->Id.ToString() + "." + assemblyName->ToUpperInvariant());
+	bool ownsGate = false;
+	try
+	{
+		try { ownsGate = gate->WaitOne(); }
+		catch (AbandonedMutexException^) { ownsGate = true; }
+		auto domain = safe_cast<AppDomain^>(host->GetData(domainKey));
+		bool created = domain == nullptr;
+		if (domain == nullptr)
+		{
+			auto setup = gcnew AppDomainSetup();
+			setup->ApplicationBase = Path::GetDirectoryName(assemblyPath);
+			setup->ConfigurationFile = assemblyPath + ".config";
+			domain = AppDomain::CreateDomain(assemblyName, nullptr, setup);
+			host->SetData(domainKey, domain);
+		}
+		try
+		{
+			String^ action = "Reusing";
+			if (created) action = "Created";
+			LogMessage(String::Format("{0} AppDomain '{1}' (id {2}).",
+				action, assemblyName, domain->Id), true);
+		}
+		catch (Exception^ error) { System::Diagnostics::Debug::WriteLine(error); }
+
+		domain->SetData(RequestDataKey, gcnew array<String^> {
+			assemblyPath, injectorData->ClassName, injectorData->MethodName, injectorData->SettingsFile });
+		domain->SetData(ErrorDataKey, nullptr);
+		try
+		{
+			domain->DoCallBack(gcnew CrossAppDomainDelegate(&Injector::InvokeEntryPoint));
+			auto error = safe_cast<String^>(domain->GetData(ErrorDataKey));
+			if (error != nullptr)
+				throw gcnew InvalidOperationException(error);
+		}
+		finally
+		{
+			domain->SetData(RequestDataKey, nullptr);
+			domain->SetData(ErrorDataKey, nullptr);
+		}
+	}
+	finally
+	{
+		if (ownsGate) gate->ReleaseMutex();
+		delete gate;
+	}
+}
 //-----------------------------------------------------------------------------
 //Spying Process functions follow
 //-----------------------------------------------------------------------------
@@ -92,7 +203,7 @@ void Injector::Launch(System::IntPtr windowHandle, InjectorData^ injectorData)
 void Injector::LogMessage(System::String^ message, bool append)
 {
 	System::String^ applicationDataPath = System::Environment::GetFolderPath(System::Environment::SpecialFolder::ApplicationData);
-	applicationDataPath += "\\SnapCardViewHook";
+	applicationDataPath += "\\NetInjector";
 
 	if (!System::IO::Directory::Exists(applicationDataPath))
 	{
@@ -120,83 +231,45 @@ LRESULT MessageHookProc(int nCode, WPARAM wparam, LPARAM lparam)
 	if (nCode == HC_ACTION)
 	{
 		const auto msg = (CWPSTRUCT*)lparam;
-
-		if (msg != nullptr
-			&& msg->message == WM_GOBABYGO)
+		if (msg != nullptr && msg->message == WM_GOBABYGO)
 		{
-			System::Diagnostics::Debug::WriteLine("Got WM_GOBABYGO message");
-
-			const auto acmRemote = (wchar_t*)msg->wParam;
-
-			const auto acmLocal = gcnew System::String(acmRemote);
-			System::Diagnostics::Debug::WriteLine(System::String::Format("acmLocal = {0}", acmLocal));
-
-			auto serializer = gcnew System::Xml::Serialization::XmlSerializer(InjectorData::typeid);
-
-			const auto stringReader = gcnew System::IO::StringReader(acmLocal);
-			const auto injectorData = static_cast<InjectorData^>(serializer->Deserialize(stringReader));
-
-			System::Diagnostics::Debug::WriteLine(System::String::Format("About to load assembly {0}", injectorData->AssemblyName));
-
-			System::Reflection::Assembly^ assembly;
 			try
 			{
-				assembly = System::Reflection::Assembly::LoadFile(injectorData->AssemblyName);
+				if (msg->wParam == 0)
+					throw gcnew ArgumentException("The injector request is empty.");
+				const auto acmLocal = gcnew String((wchar_t*)msg->wParam);
+				auto serializer = gcnew System::Xml::Serialization::XmlSerializer(InjectorData::typeid);
+				auto reader = gcnew StringReader(acmLocal);
+				InjectorData^ injectorData;
+				try
+				{
+					injectorData = safe_cast<InjectorData^>(serializer->Deserialize(reader));
+				}
+				finally
+				{
+					delete reader;
+				}
+				Injector::LoadIntoAppDomain(injectorData);
 			}
-			catch (System::Exception^ exception)
+			catch (Exception^ exception)
 			{
-				Injector::LogMessage(exception->Message, true);
-				
-				const auto errorMessage = System::String::Format(
-					"SnapCardViewHook could not load the following file:\n\n{0}\n\n"
-					"Windows may be blocking files downloaded from the Internet. Close SNAP, "
-					"right-click the original downloaded ZIP, select Properties > Unblock, "
-					"then extract it again.\n\nError details:\n{1}",
-					injectorData->AssemblyName,
-					exception->Message);
+				const auto errorMessage = String::Format(
+					"NetInjector could not invoke the requested entry point.\n\n{0}", exception);
+				try
+				{
+					Injector::LogMessage(errorMessage, true);
+				}
+				catch (Exception^ logException)
+				{
+					System::Diagnostics::Debug::WriteLine(logException);
+				}
 
 				const pin_ptr<const wchar_t> pinnedErrorMessage = PtrToStringChars(errorMessage);
-				::MessageBoxW(
-					msg->hwnd,
-					pinnedErrorMessage,
-					L"SnapCardViewHook - File load failed",
-					MB_OK | MB_ICONERROR | MB_TOPMOST);
-
-				return CallNextHookEx(_messageHookHandle, nCode, wparam, lparam);
-			}
-
-			if (assembly != nullptr)
-			{
-				System::Diagnostics::Debug::WriteLine(System::String::Format("About to load type {0}", injectorData->ClassName));
-				auto type = assembly->GetType(injectorData->ClassName);
-				if (type != nullptr)
-				{
-					System::Diagnostics::Debug::WriteLine(System::String::Format("Just loaded the type {0}", injectorData->ClassName));
-
-					System::Diagnostics::Debug::WriteLine(System::String::Format("About to get method info for {0}", injectorData->MethodName));
-					auto methodInfo = type->GetMethod(injectorData->MethodName, System::Reflection::BindingFlags::Static | System::Reflection::BindingFlags::Public);
-
-					if (methodInfo != nullptr)
-					{
-						System::Diagnostics::Debug::WriteLine(System::String::Format("Just got method info for {0}", injectorData->MethodName));
-
-						System::Diagnostics::Debug::WriteLine(System::String::Format("About to invoke {0} on type {1}", methodInfo->Name, injectorData->ClassName));
-						auto args = gcnew array<System::Object^>(1);
-						args[0] = injectorData->SettingsFile;
-						auto returnValue = methodInfo->Invoke(nullptr, args);
-
-						if (nullptr == returnValue)
-						{
-							returnValue = "NULL";
-						}
-						System::Diagnostics::Debug::WriteLine(System::String::Format("Return value of {0} on type {1} is {2}", methodInfo->Name, injectorData->ClassName, returnValue));
-					}
-				}
+				::MessageBoxW(msg->hwnd, pinnedErrorMessage,
+					L"NetInjector - Injection failed", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			}
 		}
 	}
 
 	return CallNextHookEx(_messageHookHandle, nCode, wparam, lparam);
 }
-
-

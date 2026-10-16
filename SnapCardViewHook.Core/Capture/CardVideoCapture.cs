@@ -61,7 +61,6 @@ namespace SnapCardViewHook.Core.Capture
         {
             var options = recording.Options;
             var maximum = checked(options.DurationSeconds * options.FramesPerSecond);
-            var frameBytes = options.BytesPerCapturedFrame;
             var ramLimit = options.RamLimitMegabytes * 1024L * 1024;
             var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var stage = 0; // 0 = waiting to start; 1 = owns Unity resources; 2 = finished or abandoned.
@@ -101,7 +100,10 @@ namespace SnapCardViewHook.Core.Capture
                     {
                         runtime = new Il2CppRuntime();
                         capture = new UnityCardCapture(runtime);
-                        capture.Prepare(options.Frames, token);
+                        capture.Prepare(options.Frames, token, pixelLayout: CapturePixelLayout.PremultipliedRgba);
+                        if (capture.BytesPerCapturedFrame > ramLimit)
+                            throw new ArgumentOutOfRangeException(nameof(options.RamLimitMegabytes),
+                                "The RAM limit cannot hold one capture frame with CPU fallback. Increase it or lower the resolution.");
                     }
 
                     var timestamp = Stopwatch.GetTimestamp();
@@ -109,7 +111,7 @@ namespace SnapCardViewHook.Core.Capture
                     if (index >= maximum) { Finish(); return; }
                     // Check the output frame slot before doing a readback when the game runs faster than the video.
                     if (index <= recording.LastFrameIndex) return;
-                    if (recording.BufferedBytes + frameBytes > ramLimit)
+                    if (recording.BufferedBytes + capture.BytesPerCapturedFrame > ramLimit)
                     {
                         recording.Warning = "Capture reached the selected RAM limit. The buffered frames were encoded; increase the limit or lower resolution/duration for a longer capture.";
                         Finish();
@@ -126,7 +128,7 @@ namespace SnapCardViewHook.Core.Capture
                     }
                     recording.Frames.Add(new Frame { Index = index, Pixels = pixels });
                     recording.LastFrameIndex = index;
-                    recording.BufferedBytes += frameBytes;
+                    recording.BufferedBytes += pixels.ByteCount;
                     timeout.CancelAfter(TimeSpan.FromSeconds(30));
                     ReportProgress(recording, encoding: false);
                     if (index == maximum - 1) Finish();
@@ -144,7 +146,8 @@ namespace SnapCardViewHook.Core.Capture
                 try { await completion.Task.ConfigureAwait(false); }
                 catch (OperationCanceledException) when (timeout.IsCancellationRequested && !halt.IsCancellationRequested)
                 {
-                    throw new TimeoutException("No complete card frame arrived within 30 seconds. Keep the card-details view open and the game running.");
+                    throw new TimeoutException("No complete capture frame arrived within 30 seconds. Keep the " +
+                        (options.Frames.Subject == CaptureSubject.Deck ? "12-card deck overview" : "card-details view") + " open and the game running.");
                 }
                 finally { SnapTypeDataCollector.RemoveGameUiCallback(callback); }
             }
@@ -179,11 +182,14 @@ namespace SnapCardViewHook.Core.Capture
                 foreach (var frame in recording.Frames)
                 {
                     await RepeatFramesAsync(recording, writer, last, frame.Index).ConfigureAwait(false);
-                    CardCaptureDispatcher.PrepareVideoPixels(frame.Pixels, options.Frames.TransparentBackground, CancellationToken.None);
-                    last = frame.Pixels.Rgba;
-                    frame.Pixels = null; // Release frame/matte references as we consume them.
+                    var bufferedBytes = frame.Pixels.ByteCount;
+                    CardCaptureDispatcher.PreparePixels(frame.Pixels, CancellationToken.None);
+                    if (frame.Pixels.Layout != CapturePixelLayout.PremultipliedRgba)
+                        throw new InvalidOperationException("The video frame is not in the expected premultiplied RGBA format.");
+                    last = frame.Pixels.Data;
+                    frame.Pixels = null; // Release each finished frame as the encoder consumes it.
                     await writer.WriteAsync(last).ConfigureAwait(false);
-                    recording.BufferedBytes -= options.BytesPerCapturedFrame;
+                    recording.BufferedBytes -= bufferedBytes;
                     recording.EncodedFrames++;
                     ReportProgress(recording, encoding: true);
                 }

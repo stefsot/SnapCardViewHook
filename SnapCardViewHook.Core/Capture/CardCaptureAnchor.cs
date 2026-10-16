@@ -7,6 +7,8 @@ namespace SnapCardViewHook.Core.Capture
         public bool Initialized;
         public IntPtr Card, SourceCamera;
         public int CardInstanceId, SourceCameraInstanceId;
+        public IntPtr[] DeckCards, DeckModels, DeckCardParents;
+        public int[] DeckCardInstanceIds;
         public CaptureFraming Framing;
         public CaptureQuaternion Rotation;
         public CaptureVector3 Forward;
