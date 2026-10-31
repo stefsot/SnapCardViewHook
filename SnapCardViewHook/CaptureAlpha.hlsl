@@ -1,5 +1,5 @@
 // Byte-exact lookup tables preserve the existing capture's sRGB/alpha rounding.
-// Compiled into SnapCardView.Hook.dll at build time; no runtime shader compiler.
+// Compiled into SnapCardView.Hooking.dll at build time; no runtime shader compiler.
 Texture2D<float4> Color : register(t0);
 Texture2D<float4> MatteBlack : register(t1);
 Texture2D<float4> MatteWhite : register(t2);

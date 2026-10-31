@@ -1,4 +1,5 @@
 ﻿using IL2CppApi.Wrappers;
+using IL2CppApi.Runtime;
 using SnapCardViewHook.Core.Data;
 using SnapCardViewHook.Core.Capture;
 using SnapCardViewHook.Core.Helpers;
@@ -36,6 +37,13 @@ namespace SnapCardViewHook.Core.Forms
         private volatile string _replacementTargetId;
 
         private IntPtr _clonedVariantObj = IntPtr.Zero;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NullableSingle
+        {
+            public byte HasValue;
+            public float Value;
+        }
 
         public CardViewSelectorForm()
         {
@@ -110,11 +118,11 @@ namespace SnapCardViewHook.Core.Forms
             cardBox.SelectedItem = id;
         }
 
-        private void BoardViewLoadBoardOverride(IntPtr thisPtr, IntPtr boardDefId)
+        private void BoardViewLoadBoardOverride(IntPtr thisPtr, IntPtr boardDefId, IntPtr methodInfo)
         {
             boardDefId = GetBoardOverride(boardDefId);
 
-            SnapTypeDataCollector.BoardViewLoadBoardOriginal(thisPtr, boardDefId);
+            SnapTypeDataCollector.BoardViewLoadBoardOriginal(thisPtr, boardDefId, methodInfo);
         }
 
         private IntPtr GetBoardOverride(IntPtr original)
@@ -388,7 +396,7 @@ namespace SnapCardViewHook.Core.Forms
             _cardDescriptionEvents.Clear();
 
             // set default flip state to false
-            FlipCard(false);
+            // FlipCard(false);
         }
 
         private void FlipCard(bool flip)
@@ -397,10 +405,12 @@ namespace SnapCardViewHook.Core.Forms
             {
                 var instance = SnapTypeDataCollector.CardDetailsCardView_InstancePtr;
 
-                if(instance == IntPtr.Zero) 
+                if (instance == IntPtr.Zero)
                     return;
 
-                SnapTypeDataCollector.CardDetailsCardView_FlipCard(instance, flip, 0);
+                using var runtime = new Il2CppRuntime();
+                runtime.Invoke(SnapTypeDataCollector.CardDetailsCardViewFlipCardMethod, instance,
+                    Il2CppArgument.Value(flip), Il2CppArgument.Value(new NullableSingle { HasValue = 1, Value = 0f }));
             });
         }
 

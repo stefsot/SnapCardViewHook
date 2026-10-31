@@ -38,12 +38,11 @@ namespace SnapCardViewHook.Core
         // delegate type definitions
         public delegate IntPtr CardDefList_Find_delegate_(IntPtr cardDef);
         public delegate IntPtr CardToArtVariantDefList_Find_delegate_(IntPtr artVariantDefId);
-        public delegate IntPtr ptr_void__delegate_();
-
-        public delegate void CardDetailsCardView_FlipCard_delegate_(IntPtr thisPtr, bool flipped, float overrideDuration);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate IntPtr ptr_void__delegate_(IntPtr methodInfo);
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
-        public delegate void void_this__delegate_(IntPtr thisPtr);
+        public delegate void void_this__delegate_(IntPtr thisPtr, IntPtr methodInfo);
         
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
         public delegate void CardView_Initialize_delegate_(
@@ -57,7 +56,7 @@ namespace SnapCardViewHook.Core
             IntPtr factionDefId, IntPtr methodInfo);
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
-        public delegate void BoardView_LoadBoard_delegate_(IntPtr thisPtr, IntPtr p1);
+        public delegate void BoardView_LoadBoard_delegate_(IntPtr thisPtr, IntPtr boardDefId, IntPtr methodInfo);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void LocalizeStringEvent_UpdateString_delegate_(
@@ -92,7 +91,7 @@ namespace SnapCardViewHook.Core
         public static void_this__delegate_ UiVfxManagerRuntimeUpdateOriginal { get; private set; }
         public static void_this__delegate_ CardDetailsCardViewInitializeOriginal { get; private set; }
         public static IntPtr CardDetailsCardView_InstancePtr { get; private set; }
-        public static CardDetailsCardView_FlipCard_delegate_ CardDetailsCardView_FlipCard { get; private set; }
+        public static IL2CppMethodInfoWrapper CardDetailsCardViewFlipCardMethod { get; private set; }
         public static IL2CppFieldInfoWrapper[] CardBackDefId_Fields { get; private set; }
         public static IL2CppFieldInfoWrapper[] GameBoardDef_Id_Fields { get; private set; }
         public static BoardView_LoadBoard_delegate_ BoardViewLoadBoardOriginal { get; private set; }
@@ -120,6 +119,9 @@ namespace SnapCardViewHook.Core
         private static void_this__delegate_ _cache_detour_UiVfxManager_RuntimeUpdate;
         private static void_this__delegate_ _cache_detour_CardDetailsCardView_Initialize;
         private static BoardView_LoadBoard_delegate_ _cache_detour_BoardView_LoadBoard;
+
+        private static IL2CppMethodInfoWrapper _uiVfxManagerClassMethodInfo;
+
 
         private static object initLockObj = new object();
 
@@ -429,7 +431,7 @@ namespace SnapCardViewHook.Core
             var method = borderDefListClass.GetMethods().FirstOrDefault(m => m.Name == "get_DefIds");
 
             BorderDefList_get_Defs = Marshal.GetDelegateForFunctionPointer<ptr_void__delegate_>(method.MethodPointer);
-            BorderDefList_Defs_cached_value = BorderDefList_get_Defs();
+            BorderDefList_Defs_cached_value = BorderDefList_get_Defs(method.Ptr);
         }
 
         private static void Collect_BorderDef(IL2CppImageWrapper[] assemblies)
@@ -456,6 +458,8 @@ namespace SnapCardViewHook.Core
                 ThrowIL2CppMethodError("UiVfxManager.OnUpdate");
                 return;
             }
+
+            _uiVfxManagerClassMethodInfo = method;
 
             void* originalPtr;
             var detourDelegate = _cache_detour_UiVfxManager_RuntimeUpdate = new void_this__delegate_(UiVfxManager_RuntimeUpdate_Detour);
@@ -506,8 +510,7 @@ namespace SnapCardViewHook.Core
                 return;
             }
 
-            CardDetailsCardView_FlipCard = (CardDetailsCardView_FlipCard_delegate_)
-                Marshal.GetDelegateForFunctionPointer(flipCardMethod.MethodPointer, typeof(CardDetailsCardView_FlipCard_delegate_));
+            CardDetailsCardViewFlipCardMethod = flipCardMethod;
         }
 
         private static void Collect_CardBackDef(IL2CppImageWrapper[] assemblies)
@@ -552,14 +555,14 @@ namespace SnapCardViewHook.Core
         // detours
         //
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void CardDetailsCardView_Initialize_Detour(IntPtr thisPtr)
+        private static void CardDetailsCardView_Initialize_Detour(IntPtr thisPtr, IntPtr methodInfo)
         {
             CardDetailsCardView_InstancePtr = thisPtr;
-            CardDetailsCardViewInitializeOriginal(thisPtr);
+            CardDetailsCardViewInitializeOriginal(thisPtr, methodInfo);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void UiVfxManager_RuntimeUpdate_Detour(IntPtr thisPtr)
+        private static void UiVfxManager_RuntimeUpdate_Detour(IntPtr thisPtr, IntPtr methodInfo)
         {
             if (_uiThreadActions.TryPop(out var action))
                 action();
@@ -567,7 +570,7 @@ namespace SnapCardViewHook.Core
             foreach (var callback in _uiThreadCallbacks.Keys)
                 callback();
             
-            UiVfxManagerRuntimeUpdateOriginal(thisPtr);
+            UiVfxManagerRuntimeUpdateOriginal(thisPtr, methodInfo);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -607,11 +610,11 @@ namespace SnapCardViewHook.Core
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void BoardView_LoadBoard_Detour(IntPtr thisPtr, IntPtr p1)
+        private static void BoardView_LoadBoard_Detour(IntPtr thisPtr, IntPtr boardDefId, IntPtr methodInfo)
         {
             var @delegate = BoardViewLoadBoardHookOverride ?? BoardViewLoadBoardOriginal;
 
-            @delegate(thisPtr, p1);
+            @delegate(thisPtr, boardDefId, methodInfo);
         }
 
         //

@@ -125,7 +125,7 @@
     </ProjectReference>
     <ProjectReference Include="..\SnapCardViewHook\SnapCardViewHook.vcxproj">
       <Project>{874113c4-acb1-4aad-9751-2ae3d6fc3aa8}</Project>
-      <Name>SnapCardView.Hook</Name>
+      <Name>SnapCardView.Hooking</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

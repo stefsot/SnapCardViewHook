@@ -68,7 +68,7 @@ namespace SnapCardViewHook.Core.Capture
             _coloredClientSize = ClientSize;
             try
             {
-                _overlay = new TransparentCardPreviewForm(_picture.Size);
+                _overlay = new TransparentCardPreviewForm(_picture.Size) { Text = Text.Replace("preview", "overlay") };
                 _overlay.FormClosed += OverlayClosed;
                 _viewport.Visible = false;
                 MinimumSize = Size.Empty;
