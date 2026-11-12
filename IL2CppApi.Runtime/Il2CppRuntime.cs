@@ -43,6 +43,19 @@ namespace IL2CppApi.Runtime
             return _metadata.Type(type).Class;
         }
 
+        public IL2CppClassWrapper ObjectClass(IntPtr instance)
+        {
+            CheckThread();
+            if (instance == IntPtr.Zero) throw new ArgumentNullException(nameof(instance));
+            return IL2CppClassWrapper.FromPointer(_api.ObjectClass(instance));
+        }
+
+        public IntPtr Retain(IntPtr instance)
+        {
+            CheckThread();
+            return Keep(instance);
+        }
+
         public IL2CppMethodInfoWrapper Method(IL2CppClassWrapper owner, string name, bool isStatic, params string[] parameters)
         {
             CheckThread();
@@ -138,7 +151,9 @@ namespace IL2CppApi.Runtime
                         argv[i] = args[i].Reference;
                     }
                 }
-                var result = _api.Invoke(method.Ptr, instance, args.Length == 0 ? IntPtr.Zero : (IntPtr)argv, out var error);
+                var target = !signature.IsStatic && signature.DeclaringType.IsValueType
+                    ? _api.Unbox(instance) : instance;
+                var result = _api.Invoke(method.Ptr, target, args.Length == 0 ? IntPtr.Zero : (IntPtr)argv, out var error);
                 if (error != IntPtr.Zero)
                 {
                     var message = new StringBuilder(2048);

@@ -265,6 +265,12 @@ namespace IL2CppApi
 				return gcnew IL2CppClassWrapper(IL2cppNativeApi::il2cpp_class_from_il2cpp_type(type->_native_pointer));
 			}
 
+			static IL2CppClassWrapper^ FromPointer(IntPtr pointer)
+			{
+				if (pointer == IntPtr::Zero) return nullptr;
+				return gcnew IL2CppClassWrapper(static_cast<Il2CppClass*>(pointer.ToPointer()));
+			}
+
 			static bool MethodHasAttribute(IL2CppMethodInfoWrapper^ method, IL2CppClassWrapper^ attr_class)
 			{
 				return IL2cppNativeApi::il2cpp_method_has_attribute(method->_native_pointer, attr_class->_native_pointer);

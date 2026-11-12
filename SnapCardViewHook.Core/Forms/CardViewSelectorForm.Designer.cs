@@ -28,20 +28,21 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.surfaceEffectBox = new System.Windows.Forms.ComboBox();
             this.overrideSurfaceEffectCheckBox = new System.Windows.Forms.CheckBox();
             this.overrideRevealEffectCheckBox = new System.Windows.Forms.CheckBox();
             this.revealEffectBox = new System.Windows.Forms.ComboBox();
             this.overrideVariantCheckBox = new System.Windows.Forms.CheckBox();
-            this.variantBox = new System.Windows.Forms.ComboBox();
+            this.variantBox = new SnapCardViewHook.Core.Forms.SearchComboBox();
             this.ensureVariantMatchCheckbox = new System.Windows.Forms.CheckBox();
             this.force3DCheckbox = new System.Windows.Forms.CheckBox();
             this.overrideBorderCheckBox = new System.Windows.Forms.CheckBox();
             this.borderBox = new System.Windows.Forms.ComboBox();
             this.overrideCardCheckBox = new System.Windows.Forms.CheckBox();
-            this.cardBox = new System.Windows.Forms.ComboBox();
+            this.cardBox = new SnapCardViewHook.Core.Forms.SearchComboBox();
             this.onlyReplaceTargetCardCheckBox = new System.Windows.Forms.CheckBox();
-            this.replacementTargetCardBox = new System.Windows.Forms.ComboBox();
+            this.replacementTargetCardBox = new SnapCardViewHook.Core.Forms.SearchComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.flipCardCheckBox = new System.Windows.Forms.CheckBox();
             this.overrideCardBackCheckBox = new System.Windows.Forms.CheckBox();
@@ -51,8 +52,10 @@
             this.overrideBoardCheckBox = new System.Windows.Forms.CheckBox();
             this.boardBox = new System.Windows.Forms.ComboBox();
             this.showCatalogButton = new System.Windows.Forms.Button();
-            this.mainMenuStrip = new System.Windows.Forms.MenuStrip();
-            this.captureMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.captureMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.captureButton = new SnapCardViewHook.Core.Forms.DropDownButton();
+            this.showOverridesButton = new System.Windows.Forms.Button();
+            this.showAssetLabButton = new System.Windows.Forms.Button();
             this.capturePngMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.captureVideoMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.captureDeckPngMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -63,7 +66,7 @@
             this.changePowerCheckBox = new System.Windows.Forms.CheckBox();
             this.costNumeric = new System.Windows.Forms.NumericUpDown();
             this.powerNumeric = new System.Windows.Forms.NumericUpDown();
-            this.mainMenuStrip.SuspendLayout();
+            this.captureMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).BeginInit();
             this.SuspendLayout();
@@ -121,8 +124,6 @@
             // 
             // variantBox
             // 
-            this.variantBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.variantBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.variantBox.FormattingEnabled = true;
             this.variantBox.Location = new System.Drawing.Point(34, 317);
             this.variantBox.Name = "variantBox";
@@ -188,8 +189,6 @@
             // 
             // cardBox
             // 
-            this.cardBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.cardBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cardBox.FormattingEnabled = true;
             this.cardBox.Location = new System.Drawing.Point(34, 61);
             this.cardBox.Name = "cardBox";
@@ -214,8 +213,6 @@
             //
             // replacementTargetCardBox
             //
-            this.replacementTargetCardBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.replacementTargetCardBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.replacementTargetCardBox.DropDownWidth = 216;
             this.replacementTargetCardBox.Enabled = false;
             this.replacementTargetCardBox.FormattingEnabled = true;
@@ -317,60 +314,65 @@
             // 
             // showCatalogButton
             // 
-            this.showCatalogButton.Location = new System.Drawing.Point(403, 587);
+            this.showCatalogButton.Location = new System.Drawing.Point(156, 621);
             this.showCatalogButton.Name = "showCatalogButton";
-            this.showCatalogButton.Size = new System.Drawing.Size(127, 23);
-            this.showCatalogButton.TabIndex = 20;
-            this.showCatalogButton.Text = "Show card catalog";
+            this.showCatalogButton.Size = new System.Drawing.Size(114, 30);
+            this.showCatalogButton.TabIndex = 31;
+            this.showCatalogButton.Text = "Card catalog...";
             this.showCatalogButton.UseVisualStyleBackColor = true;
             this.showCatalogButton.Click += new System.EventHandler(this.showCatalogButton_Click);
-            //
-            // mainMenuStrip
-            //
-            this.mainMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.captureMenuItem});
-            this.mainMenuStrip.Location = new System.Drawing.Point(0, 0);
-            this.mainMenuStrip.Name = "mainMenuStrip";
-            this.mainMenuStrip.Size = new System.Drawing.Size(542, 24);
-            this.mainMenuStrip.TabIndex = 27;
-            //
-            // captureMenuItem
-            //
-            this.captureMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.capturePngMenuItem,
-            this.captureVideoMenuItem,
-            this.captureDeckPngMenuItem,
-            this.captureDeckVideoMenuItem});
-            this.captureMenuItem.Name = "captureMenuItem";
-            this.captureMenuItem.Size = new System.Drawing.Size(61, 20);
-            this.captureMenuItem.Text = "&Capture";
-            //
-            // capturePngMenuItem
-            //
+            this.captureButton.DropDownMenu = this.captureMenu;
+            this.captureButton.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.captureButton.Location = new System.Drawing.Point(34, 621);
+            this.captureButton.Name = "captureButton";
+            this.captureButton.Size = new System.Drawing.Size(114, 30);
+            this.captureButton.TabIndex = 30;
+            this.captureButton.Text = "Capture";
+            this.captureButton.UseVisualStyleBackColor = true;
+            this.showOverridesButton.Location = new System.Drawing.Point(278, 621);
+            this.showOverridesButton.Name = "showOverridesButton";
+            this.showOverridesButton.Size = new System.Drawing.Size(114, 30);
+            this.showOverridesButton.TabIndex = 32;
+            this.showOverridesButton.Text = "Card overrides...";
+            this.showOverridesButton.UseVisualStyleBackColor = true;
+            this.showOverridesButton.Click += this.showOverridesButton_Click;
+            this.showAssetLabButton.Location = new System.Drawing.Point(400, 621);
+            this.showAssetLabButton.Name = "showAssetLabButton";
+            this.showAssetLabButton.Size = new System.Drawing.Size(114, 30);
+            this.showAssetLabButton.TabIndex = 33;
+            this.showAssetLabButton.Text = "Asset Lab...";
+            this.showAssetLabButton.UseVisualStyleBackColor = true;
+            this.showAssetLabButton.Click += new System.EventHandler(this.showAssetLabButton_Click);
+            this.captureMenu.Name = "captureMenu";
+            this.captureMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+                this.capturePngMenuItem,
+                this.captureVideoMenuItem,
+                this.captureDeckPngMenuItem,
+                this.captureDeckVideoMenuItem });
             this.capturePngMenuItem.Name = "capturePngMenuItem";
             this.capturePngMenuItem.Size = new System.Drawing.Size(184, 22);
-            this.capturePngMenuItem.Text = "&PNG capture...";
+            this.capturePngMenuItem.Text = "Card capture (PNG)...";
             this.capturePngMenuItem.Click += new System.EventHandler(this.capturePngMenuItem_Click);
             //
             // captureVideoMenuItem
             //
             this.captureVideoMenuItem.Name = "captureVideoMenuItem";
             this.captureVideoMenuItem.Size = new System.Drawing.Size(184, 22);
-            this.captureVideoMenuItem.Text = "&Video capture...";
+            this.captureVideoMenuItem.Text = "Card capture (video)...";
             this.captureVideoMenuItem.Click += new System.EventHandler(this.captureVideoMenuItem_Click);
             // 
             // captureDeckPngMenuItem
             //
             this.captureDeckPngMenuItem.Name = "captureDeckPngMenuItem";
             this.captureDeckPngMenuItem.Size = new System.Drawing.Size(184, 22);
-            this.captureDeckPngMenuItem.Text = "Deck PNG capture...";
+            this.captureDeckPngMenuItem.Text = "Deck capture (PNG)...";
             this.captureDeckPngMenuItem.Click += new System.EventHandler(this.captureDeckPngMenuItem_Click);
             //
             // captureDeckVideoMenuItem
             //
             this.captureDeckVideoMenuItem.Name = "captureDeckVideoMenuItem";
             this.captureDeckVideoMenuItem.Size = new System.Drawing.Size(184, 22);
-            this.captureDeckVideoMenuItem.Text = "Deck video capture...";
+            this.captureDeckVideoMenuItem.Text = "Deck capture (video)...";
             this.captureDeckVideoMenuItem.Click += new System.EventHandler(this.captureDeckVideoMenuItem_Click);
             //
             // overrideFactionCheckBox
@@ -453,7 +455,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(542, 622);
+            this.ClientSize = new System.Drawing.Size(542, 663);
             this.Controls.Add(this.replacementTargetCardBox);
             this.Controls.Add(this.onlyReplaceTargetCardCheckBox);
             this.Controls.Add(this.powerNumeric);
@@ -463,7 +465,9 @@
             this.Controls.Add(this.overrideFactionCheckBox);
             this.Controls.Add(this.factionBox);
             this.Controls.Add(this.showCatalogButton);
-            this.Controls.Add(this.mainMenuStrip);
+            this.Controls.Add(this.captureButton);
+            this.Controls.Add(this.showOverridesButton);
+            this.Controls.Add(this.showAssetLabButton);
             this.Controls.Add(this.boardBox);
             this.Controls.Add(this.overrideBoardCheckBox);
             this.Controls.Add(this.overrideDescriptionCheckBox);
@@ -485,15 +489,13 @@
             this.Controls.Add(this.overrideSurfaceEffectCheckBox);
             this.Controls.Add(this.surfaceEffectBox);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.MainMenuStrip = this.mainMenuStrip;
             this.MaximizeBox = false;
             this.Name = "CardViewSelectorForm";
             this.ShowIcon = false;
             this.Text = "Card view selector";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CardViewSelectorForm_FormClosing);
             this.Load += new System.EventHandler(this.CardViewSelectorForm_Load);
-            this.mainMenuStrip.ResumeLayout(false);
-            this.mainMenuStrip.PerformLayout();
+            this.captureMenu.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.costNumeric)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.powerNumeric)).EndInit();
             this.ResumeLayout(false);
@@ -508,15 +510,15 @@
         private System.Windows.Forms.CheckBox overrideRevealEffectCheckBox;
         private System.Windows.Forms.ComboBox revealEffectBox;
         private System.Windows.Forms.CheckBox overrideVariantCheckBox;
-        private System.Windows.Forms.ComboBox variantBox;
+        private SnapCardViewHook.Core.Forms.SearchComboBox variantBox;
         private System.Windows.Forms.CheckBox ensureVariantMatchCheckbox;
         private System.Windows.Forms.CheckBox force3DCheckbox;
         private System.Windows.Forms.CheckBox overrideBorderCheckBox;
         private System.Windows.Forms.ComboBox borderBox;
         private System.Windows.Forms.CheckBox overrideCardCheckBox;
-        private System.Windows.Forms.ComboBox cardBox;
+        private SnapCardViewHook.Core.Forms.SearchComboBox cardBox;
         private System.Windows.Forms.CheckBox onlyReplaceTargetCardCheckBox;
-        private System.Windows.Forms.ComboBox replacementTargetCardBox;
+        private SnapCardViewHook.Core.Forms.SearchComboBox replacementTargetCardBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox flipCardCheckBox;
         private System.Windows.Forms.CheckBox overrideCardBackCheckBox;
@@ -526,8 +528,10 @@
         private System.Windows.Forms.CheckBox overrideBoardCheckBox;
         private System.Windows.Forms.ComboBox boardBox;
         private System.Windows.Forms.Button showCatalogButton;
-        private System.Windows.Forms.MenuStrip mainMenuStrip;
-        private System.Windows.Forms.ToolStripMenuItem captureMenuItem;
+        private System.Windows.Forms.ContextMenuStrip captureMenu;
+        private SnapCardViewHook.Core.Forms.DropDownButton captureButton;
+        private System.Windows.Forms.Button showOverridesButton;
+        private System.Windows.Forms.Button showAssetLabButton;
         private System.Windows.Forms.ToolStripMenuItem capturePngMenuItem;
         private System.Windows.Forms.ToolStripMenuItem captureVideoMenuItem;
         private System.Windows.Forms.ToolStripMenuItem captureDeckPngMenuItem;

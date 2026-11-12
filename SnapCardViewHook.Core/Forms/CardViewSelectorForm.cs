@@ -5,6 +5,8 @@ using SnapCardViewHook.Core.Capture;
 using SnapCardViewHook.Core.Helpers;
 using SnapCardViewHook.Core.IL2Cpp;
 using SnapCardViewHook.Core.Wrappers;
+using SnapCardViewHook.Core.Overrides;
+using SnapCardViewHook.Core.AssetLab;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -35,6 +37,14 @@ namespace SnapCardViewHook.Core.Forms
         private volatile string _replacementCardKey;
         // Null means all cards; empty means filtering is enabled without a valid selection.
         private volatile string _replacementTargetId;
+
+        private readonly CardOverrideStore _overrideStore = new CardOverrideStore();
+        private CardOverrideCatalog _overrideCatalog;
+        private CardOverrideConfigs _overrideConfigs;
+        private CardViewOverrides _cardOverrides;
+        private CardOverridesForm _cardOverridesForm;
+        private readonly AssetLabController _assetLab = new AssetLabController();
+        private AssetLabForm _assetLabForm;
 
         private IntPtr _clonedVariantObj = IntPtr.Zero;
 
@@ -81,15 +91,18 @@ namespace SnapCardViewHook.Core.Forms
             // populate controls
             surfaceEffectBox.Items.AddRange(_surfaceEffectList?.Keys.ToArray() ?? Array.Empty<string>());
             revealEffectBox.Items.AddRange(_revealEffectList?.Keys.ToArray() ?? Array.Empty<string>());
-            variantBox.Items.AddRange(_variantList?.Keys.ToArray() ?? Array.Empty<string>());
+            variantBox.SetItems(_variantList?.Keys.ToArray() ?? Array.Empty<string>());
             borderBox.Items.AddRange(_borderList?.Keys.ToArray() ?? Array.Empty<string>());
-            cardBox.Items.AddRange(_cardDefList?.Keys.ToArray() ?? Array.Empty<string>());
-            replacementTargetCardBox.Items.AddRange(_cardDefList?.Keys.ToArray() ?? Array.Empty<string>());
+            cardBox.SetItems(_cardDefList?.Keys.ToArray() ?? Array.Empty<string>());
+            replacementTargetCardBox.SetItems(_cardDefList?.Keys.ToArray() ?? Array.Empty<string>());
             cardBackBox.Items.AddRange(_cardBackList?.Keys.ToArray() ?? Array.Empty<string>());
             boardBox.Items.AddRange(_gameBoardList?.Keys.ToArray() ?? Array.Empty<string>());
             factionBox.Items.AddRange(_factionList?.Keys.ToArray() ?? Array.Empty<string>());
             replacementCard_Changed(this, EventArgs.Empty);
             replacementTarget_Changed(this, EventArgs.Empty);
+
+            _overrideCatalog = CardOverrideCatalog.FromClient();
+            _cardOverrides = new CardViewOverrides(_overrideCatalog, _overrideStore);
 
             // set hook override
             SnapTypeDataCollector.CardViewInitializeHookOverride = CardViewInitOverride;
@@ -115,7 +128,26 @@ namespace SnapCardViewHook.Core.Forms
 
         internal void SetCardOverride(string id)
         {
-            cardBox.SelectedItem = id;
+            cardBox.SetSelection(id);
+        }
+
+        private void showOverridesButton_Click(object sender, EventArgs e)
+        {
+            if (_overrideConfigs == null) _overrideConfigs = new CardOverrideConfigs(_overrideStore);
+            if (_cardOverridesForm == null || _cardOverridesForm.IsDisposed)
+                _cardOverridesForm = new CardOverridesForm(_overrideCatalog, _overrideStore, _overrideConfigs);
+            if (!_cardOverridesForm.Visible) _cardOverridesForm.Show(this);
+            _cardOverridesForm.BringToFront();
+            _cardOverridesForm.Activate();
+        }
+
+        private void showAssetLabButton_Click(object sender, EventArgs e)
+        {
+            if (_assetLabForm == null || _assetLabForm.IsDisposed)
+                _assetLabForm = new AssetLabForm(_assetLab);
+            if (!_assetLabForm.Visible) _assetLabForm.Show(this);
+            _assetLabForm.BringToFront();
+            _assetLabForm.Activate();
         }
 
         private void BoardViewLoadBoardOverride(IntPtr thisPtr, IntPtr boardDefId, IntPtr methodInfo)
@@ -140,6 +172,12 @@ namespace SnapCardViewHook.Core.Forms
             int logoEffectId, IntPtr cardBackDefId, bool isMorph, bool setTransparentQueue,
             IntPtr factionDefId, IntPtr methodInfo)
         {
+            if (_assetLab.TryOverride(thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
+                surfaceEffectDefId, cardRevealEffectDefId, cardRevealEffectType, showRevealEffectOnStart,
+                logoEffectId, cardBackDefId, isMorph, setTransparentQueue, factionDefId, methodInfo)) return;
+
+            var originalCardDef = cardDef;
+
             // Match the incoming card before replacement changes its definition and defaults.
             cardDef = GetCardOverride(cardDef, ref cost, ref power, ref artVariantDefId);
             artVariantDefId = GetVariantOverride(artVariantDefId, cardDef);
@@ -158,7 +196,11 @@ namespace SnapCardViewHook.Core.Forms
             if (force3DCheckbox.Checked)
                 rarity = 7;
 
-            TrackDescriptionEvent(thisPtr);
+            _cardOverrides.Apply(originalCardDef, ref cardDef, ref cost, ref power, ref rarity,
+                ref borderDefId, ref artVariantDefId, ref surfaceEffectDefId,
+                ref cardRevealEffectDefId, ref cardBackDefId, ref factionDefId);
+
+            TrackDescriptionEvent(thisPtr, originalCardDef);
 
             SnapTypeDataCollector.CardViewInitializeOriginal(
                 thisPtr, cardDef, cost, power, rarity, borderDefId, artVariantDefId,
@@ -167,10 +209,10 @@ namespace SnapCardViewHook.Core.Forms
                 factionDefId, methodInfo
             );
 
-            TrackDescriptionEvent(thisPtr);
+            TrackDescriptionEvent(thisPtr, originalCardDef);
         }
 
-        private void TrackDescriptionEvent(IntPtr cardView)
+        private void TrackDescriptionEvent(IntPtr cardView, IntPtr originalCardDef)
         {
             if (cardView == IntPtr.Zero)
                 return;
@@ -180,11 +222,19 @@ namespace SnapCardViewHook.Core.Forms
                 SnapTypeDataCollector.CardView_LocalizeDescriptionEvent_Field_Offset);
 
             if (descriptionEvent != IntPtr.Zero)
+            {
                 _cardDescriptionEvents.TryAdd(descriptionEvent, 0);
+                _cardOverrides.TrackDescription(descriptionEvent, originalCardDef);
+            }
         }
 
         private string GetDescriptionOverride(IntPtr descriptionEvent)
         {
+            var assetText = _assetLab.DescriptionOverride(descriptionEvent);
+            if (assetText != null) return assetText;
+            var perCardText = _cardOverrides.GetDescriptionOverride(descriptionEvent);
+            if (perCardText != null) return perCardText;
+
             if (!_overrideDescription || !_cardDescriptionEvents.ContainsKey(descriptionEvent))
                 return null;
 
@@ -230,37 +280,25 @@ namespace SnapCardViewHook.Core.Forms
                 string.Equals(new CardDefWrapper(original).GetId(), targetId, StringComparison.Ordinal);
         }
 
-        private static string ListedCardSelection(ComboBox combo)
+        private static string ListedCardSelection(SearchComboBox combo)
         {
-            var text = combo.Text.Trim();
-            return combo.Items.Cast<string>().FirstOrDefault(item =>
-                string.Equals(item, text, StringComparison.OrdinalIgnoreCase));
+            return combo.FindItem(combo.Text.Trim()) as string;
         }
 
-        private static void CommitCardSelection(ComboBox combo)
+        private static void CommitCardSelection(SearchComboBox combo)
         {
-            var selected = ListedCardSelection(combo);
-            if (selected == null)
-            {
-                combo.SelectedIndex = -1;
-                combo.Text = string.Empty;
-            }
-            else
-            {
-                combo.SelectedItem = selected;
-                combo.Text = selected;
-            }
+            combo.SetSelection(ListedCardSelection(combo));
         }
 
         private void cardSelection_Validating(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            CommitCardSelection((ComboBox)sender);
+            CommitCardSelection((SearchComboBox)sender);
         }
 
         private void cardSelection_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode != Keys.Enter) return;
-            var combo = (ComboBox)sender;
+            if (e.KeyCode != Keys.Enter || e.Handled) return;
+            var combo = (SearchComboBox)sender;
             CommitCardSelection(combo);
             combo.DroppedDown = false;
             e.Handled = true;
@@ -269,12 +307,14 @@ namespace SnapCardViewHook.Core.Forms
 
         private void replacementCard_Changed(object sender, EventArgs e)
         {
+            if (cardBox.IsUpdating) return;
             // Do not keep using the previous selection while the user types an invalid value.
             _replacementCardKey = ListedCardSelection(cardBox);
         }
 
         private void replacementTarget_Changed(object sender, EventArgs e)
         {
+            if (replacementTargetCardBox.IsUpdating) return;
             replacementTargetCardBox.Enabled = onlyReplaceTargetCardCheckBox.Checked;
             if (!onlyReplaceTargetCardCheckBox.Checked)
             {
@@ -385,6 +425,7 @@ namespace SnapCardViewHook.Core.Forms
 
         private void CardViewSelectorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            _assetLab.Close();
             // remove overrides
             SnapTypeDataCollector.CardViewInitializeHookOverride = null;
             SnapTypeDataCollector.BoardViewLoadBoardHookOverride = null;
@@ -394,6 +435,7 @@ namespace SnapCardViewHook.Core.Forms
             _replacementCardKey = null;
             _replacementTargetId = null;
             _cardDescriptionEvents.Clear();
+            _cardOverrides?.Clear();
 
             // set default flip state to false
             // FlipCard(false);

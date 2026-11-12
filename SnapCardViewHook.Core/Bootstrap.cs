@@ -34,6 +34,7 @@ namespace SnapCardViewHook.Core
 
             var t = _formThread = new Thread(() =>
             {
+                Application.EnableVisualStyles();
                 var f = new CardViewSelectorForm();
                 Application.Run(f);
             });
