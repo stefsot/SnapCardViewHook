@@ -110,7 +110,7 @@ namespace SnapCardViewHook.Core.Capture
                 !_cards.SequenceEqual(anchor.DeckCards)) return false;
             for (var i = 0; i < _cards.Length; i++)
                 if (!Alive(_cards[i]) || CallValue<int>(_object, _cards[i], "GetInstanceID", NoArgs) != anchor.DeckCardInstanceIds[i] ||
-                    GetReference(_cardView, _cards[i], "CardModel") != anchor.DeckModels[i] ||
+                    GetReference(_cardView, _cards[i], "CardEntity") != anchor.DeckModels[i] ||
                     GetReference(_transform, _deckCardTransforms[i], "parent") != anchor.DeckCardParents[i]) return false;
             return true;
         }

@@ -177,7 +177,7 @@ namespace SnapCardViewHook.Core.Capture
                 if (options.Subject == CaptureSubject.Deck)
                 {
                     anchor.DeckCards = (IntPtr[])_cards.Clone();
-                    anchor.DeckModels = _cards.Select(card => GetReference(_cardView, card, "CardModel")).ToArray();
+                    anchor.DeckModels = _cards.Select(card => GetReference(_cardView, card, "CardEntity")).ToArray();
                     anchor.DeckCardInstanceIds = _cards.Select(card => CallValue<int>(_object, card, "GetInstanceID", NoArgs)).ToArray();
                     anchor.DeckCardParents = _deckCardTransforms.Select(transform => GetReference(_transform, transform, "parent")).ToArray();
                 }
